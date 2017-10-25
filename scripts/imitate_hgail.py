@@ -20,7 +20,7 @@ from hgail.envs.envs import TwoRoundNondeterministicRewardEnv
 from hgail.policies.categorical_latent_var_mlp_policy import CategoricalLatentVarMLPPolicy
 from hgail.policies.categorical_latent_sampler import CategoricalLatentSampler
 from hgail.algos.gail import GAIL
-from hgail.algos.hgail import HGAIL
+from hgail.algos.hgail_impl import HGAIL
 from hgail.samplers.hierarchy_sampler import HierarchySampler
 from hgail.policies.latent_sampler import UniformlyRandomLatentSampler
 from hgail.core.models import CriticNetwork, ObservationActionMLP
