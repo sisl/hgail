@@ -30,8 +30,8 @@ def load_env(filepath):
     with tf.Session() as session:
         d = joblib.load(filepath)
         env = d['env']
-        print filepath
-        print env
+        print(filepath)
+        print(env)
     tf.reset_default_graph()
     return env
 

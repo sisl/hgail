@@ -22,7 +22,6 @@ def collect(filepath, n_traj, max_steps):
         policy = d['policy']
         env = d['env']
         trajectories = hgail.misc.simulation.collect_trajectories(n_traj, env, policy, max_steps)
-
     return trajectories
 
 def collect_many(filepaths, n_traj, max_steps):
@@ -99,7 +98,7 @@ if __name__ == '__main__':
     exp_name = 'DualGoalEnv'
 
     # collect expert trajectories
-    itr = 95
+    itr = 35
     input_filepath = '../data/experiments/{}/train/log/itr_{}.pkl'.format(exp_name, itr)
     output_dir = '../data/experiments/{}/collection/'.format(exp_name)
     utils.maybe_mkdir(output_dir)

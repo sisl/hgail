@@ -23,7 +23,7 @@ utils.set_up_experiment(exp_name=exp_name, phase='train')
 env = DualGoalEnv()
 env = normalize(env)
 env = TfEnv(env)
-print env.observation_space.flat_dim
+# print env.observation_space.flat_dim
 policy = CategoricalMLPPolicy(
     name="policy",
     env_spec=env.spec,

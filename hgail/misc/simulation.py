@@ -44,7 +44,12 @@ def simulate(env, policy, max_steps, render=False):
         if render: env.render()
         a, a_info = policy.get_action(x)
         nx, r, done, e_info = env.step(a)
-        traj.add(x, a, r, a_info)
+        traj.add(
+            policy.observation_space.flatten(x), 
+            a, 
+            r, 
+            a_info
+        )
         if done: break
         x = nx
     return traj

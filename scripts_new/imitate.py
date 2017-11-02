@@ -1,4 +1,6 @@
 
+
+
 import gym
 import joblib
 import numpy as np
@@ -64,7 +66,7 @@ env = TfEnv(env)
 # load critic dataset
 expert_data_filepath = os.path.join(exp_dir, 'collection', 'expert_traj.h5')
 data = hgail.misc.utils.load_dataset(expert_data_filepath, maxsize=real_data_maxsize)
-data['actions'] = hgail.misc.utils.to_onehot(data['actions'])
+data['actions'] = hgail.misc.utils.to_onehot(data['actions'], dim=env.action_space.flat_dim)
 if use_critic_replay_memory:
     critic_replay_memory = hgail.misc.utils.KeyValueReplayMemory(maxsize=3 *  batch_size)
 else:
@@ -89,7 +91,6 @@ with tf.Session() as session:
         hidden_layer_dims=[64,64],
         dropout_keep_prob=critic_dropout_keep_prob
     )
-    print env.observation_space.flat_dim,
     critic = WassersteinCritic(
         obs_dim=env.observation_space.flat_dim,
         act_dim=env.action_space.n,
