@@ -95,15 +95,17 @@ if __name__ == '__main__':
     learned infogail policy, comment out the second to collect expert trajectories
     '''
 
-    exp_name = 'DualGoalEnv'
+    exp_list = ['DualGoalEnv00','DualGoalEnv01','DualGoalEnv10','DualGoalEnv11']
 
     # collect expert trajectories
     itr = 35
-    input_filepath = '../data/experiments/{}/train/log/itr_{}.pkl'.format(exp_name, itr)
-    output_dir = '../data/experiments/{}/collection/'.format(exp_name)
-    utils.maybe_mkdir(output_dir)
-    output_filepath = os.path.join(output_dir, 'expert_traj.h5')
-    trajectories = collect(input_filepath, n_traj=500, max_steps=1000)
+    trajectories=[]
+    for exp_name in exp_list:
+        input_filepath = '../data/experiments/{}/train/log/itr_{}.pkl'.format(exp_name, itr)
+        output_dir = '../data/experiments/{}/collection/'.format(exp_name)
+        utils.maybe_mkdir(output_dir)
+        output_filepath = os.path.join(output_dir, 'expert_traj.h5')
+        trajectories += collect(input_filepath, n_traj=500, max_steps=1000)
     hgail.misc.simulation.write_trajectories(trajectories, output_filepath)
 
     # # visualzie gail policy

@@ -1,6 +1,3 @@
-
-
-
 import gym
 import joblib
 import numpy as np
@@ -30,7 +27,7 @@ import utils
 
 # setup
 env_id = "DualGoalEnv"
-exp_name = "DualGoalEnv"
+exp_name = "DualGoalEnv11"
 exp_dir = utils.set_up_experiment(exp_name=exp_name, phase='imitate')
 saver_dir = os.path.join(exp_dir, 'imitate', 'log')
 saver_filepath = os.path.join(saver_dir, 'checkpoint')
@@ -38,7 +35,7 @@ saver_filepath = os.path.join(saver_dir, 'checkpoint')
 # constants
 use_infogail = True
 use_critic_replay_memory = True
-latent_dim = 2
+latent_dim = 1
 real_data_maxsize = None
 batch_size = 8000
 n_critic_train_epochs = 50

@@ -5,10 +5,11 @@ import numpy as np
 
 mov_dic={0:[0,1],1:[1,0],2:[-1,0],3:[0,-1]}
 class DualGoalEnv(Env):
-    def __init__(self,checkpoint=False):
+    def __init__(self,checkpoint=False,typ=0):
 
         self.numrow=6
         self.numcol=6
+        self.type=typ
         self.checkpoint=checkpoint
         self.chkpassed=False
         self.reset()
@@ -19,6 +20,9 @@ class DualGoalEnv(Env):
         done=False
         goal1=[self.numrow/2,self.numcol-1]
         goal2=[self.numrow-1,self.numcol/2]
+        if(self._state[2]==1):
+            goal2=[self.numrow/2,self.numcol-1]
+            goal1=[self.numrow-1,self.numcol/2]
         move_probs=[0.025,0.025,0.025,0.025]
         move_probs[action]+=0.9
         mov=np.random.choice([0,1,2,3],p=move_probs)
@@ -30,13 +34,13 @@ class DualGoalEnv(Env):
 
         if self.checkpoint:
             if self.chkpassed:
-                #Go to goal 2
-                if(list(self._state[:2])==goal2):
+                #Go to goal 
+                if(list(self._state[:2])==goal1):
                     reward=10
                     done=True
             else:
-                #go to goal 1
-                if(list(self._state[:2])==goal1):
+                #go to checkpoint
+                if(list(self._state[:2])==goal2):
                     self.chkpassed=True
 
         else:
@@ -48,7 +52,7 @@ class DualGoalEnv(Env):
         return np.copy(self._state), reward, done, {}
 
     def reset(self):
-        self._state=[0,0,1]
+        self._state=[0,0,self.type]
         self.chkpassed=False
         observation = np.copy(self._state)
         return observation

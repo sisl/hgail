@@ -16,29 +16,29 @@ import utils
 batch_size = 5000
 max_path_length = 100
 
-env_id = "CartPole-v0"
-exp_name = "DualGoalEnv"
-utils.set_up_experiment(exp_name=exp_name, phase='train')
+exp_name = ["DualGoalEnv00","DualGoalEnv10","DualGoalEnv01","DualGoalEnv11"]
+envL = [DualGoalEnv(),DualGoalEnv(checkpoint=True),DualGoalEnv(typ=1),DualGoalEnv(checkpoint=True,typ=1)]
 
-env = DualGoalEnv()
-env = normalize(env)
-env = TfEnv(env)
-# print env.observation_space.flat_dim
-policy = CategoricalMLPPolicy(
-    name="policy",
-    env_spec=env.spec,
-    hidden_sizes=(64, 32)
-)
-baseline = LinearFeatureBaseline(env_spec=env.spec)
+for i in range(4):
+    env = envL[i]
+    env = normalize(env)
+    env = TfEnv(env)
+    utils.set_up_experiment(exp_name=exp_name[i], phase='train')
+    policy = CategoricalMLPPolicy(
+        name=exp_name[i],
+        env_spec=env.spec,
+        hidden_sizes=(64, 32)
+    )
+    baseline = LinearFeatureBaseline(env_spec=env.spec)
 
-algo = TRPO(
-    env=env,
-    policy=policy,
-    baseline=baseline,
-    batch_size=batch_size,
-    max_path_length=max_path_length,
-    n_itr=100,
-    discount=0.99,
-    step_size=0.015
-)
-algo.train()
+    algo = TRPO(
+        env=env,
+        policy=policy,
+        baseline=baseline,
+        batch_size=batch_size,
+        max_path_length=max_path_length,
+        n_itr=50,
+        discount=0.99,
+        step_size=0.015
+    )
+    algo.train()
