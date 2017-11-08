@@ -56,7 +56,7 @@ max_path_length = 1000
 
 # load env from the training process
 snapshot_filepath = utils.latest_snapshot(exp_dir, phase='train')
-env = DualGoalEnv()
+env = DualGoalEnv(typ=2)
 env = normalize(env)
 env = TfEnv(env)
 

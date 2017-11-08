@@ -5,11 +5,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 import tensorflow as tf
-
+from hgail.envs.new_env import DualGoalEnv
 from sandbox.rocky.tf.envs.vec_env_executor import VecEnvExecutor
-
+from rllab.envs.normalized_env import normalize
+from sandbox.rocky.tf.envs.base import TfEnv
 import hgail.misc.simulation
-
+from random import shuffle
 import utils
 
 COLORS = ['red', 'blue', 'green']
@@ -98,20 +99,24 @@ if __name__ == '__main__':
     exp_list = ['DualGoalEnv00','DualGoalEnv01','DualGoalEnv10','DualGoalEnv11']
 
     # collect expert trajectories
-    itr = 35
+    itr = 45
     trajectories=[]
-    for exp_name in exp_list:
-        input_filepath = '../data/experiments/{}/train/log/itr_{}.pkl'.format(exp_name, itr)
-        output_dir = '../data/experiments/{}/collection/'.format(exp_name)
-        utils.maybe_mkdir(output_dir)
-        output_filepath = os.path.join(output_dir, 'expert_traj.h5')
-        trajectories += collect(input_filepath, n_traj=500, max_steps=1000)
-    hgail.misc.simulation.write_trajectories(trajectories, output_filepath)
+    # for exp_name in exp_list:
+    #     input_filepath = '../data/experiments/{}/train/log/itr_{}.pkl'.format(exp_name, itr)
+    #     output_dir = '../data/experiments/{}/collection/'.format(exp_name)
+    #     utils.maybe_mkdir(output_dir)
+    #     output_filepath = os.path.join(output_dir, 'expert_traj.h5')
+    #     trajectories += collect(input_filepath, n_traj=500, max_steps=1000)
+    # shuffle(trajectories)
+    # hgail.misc.simulation.write_trajectories(trajectories, output_filepath)
 
-    # # visualzie gail policy
-    # itr = 150
-    # phase = 'imitate'
-    # input_filepath = '../data/experiments/{}/{}/log/itr_{}.pkl'.format(exp_name, phase, itr)
-    # with tf.Session() as session:
-    #     env, policy = load_env_policy(input_filepath)
-    #     trajs = visualize(env, policy, n_traj=50, max_steps=1000, render=True)
+    # visualzie gail policy
+    itr = 995
+    phase = 'imitate'
+    input_filepath = '../data/experiments/{}/{}/log/itr_{}.pkl'.format('DualGoalEnv11', phase, itr)
+    with tf.Session() as session:
+        env, policy = load_env_policy(input_filepath)
+        env = DualGoalEnv(typ=2)
+        env = normalize(env)
+        env = TfEnv(env)
+        trajs = visualize(env, policy, n_traj=10, max_steps=1000, render=True)

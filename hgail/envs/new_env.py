@@ -53,6 +53,8 @@ class DualGoalEnv(Env):
 
     def reset(self):
         self._state=[0,0,self.type]
+        if(self.type==2):
+            self._state[2]=np.random.randint(2)
         self.chkpassed=False
         observation = np.copy(self._state)
         return observation
