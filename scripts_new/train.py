@@ -37,7 +37,7 @@ for i in range(4):
         baseline=baseline,
         batch_size=batch_size,
         max_path_length=max_path_length,
-        n_itr=50,
+        n_itr=100,
         discount=0.99,
         step_size=0.015
     )

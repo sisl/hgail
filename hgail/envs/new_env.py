@@ -16,13 +16,30 @@ class DualGoalEnv(Env):
 
     def step(self, action):
 
-        reward=0
+        reward=-1
         done=False
         goal1=[self.numrow/2,self.numcol-1]
         goal2=[self.numrow-1,self.numcol/2]
         if(self._state[2]==1):
             goal2=[self.numrow/2,self.numcol-1]
             goal1=[self.numrow-1,self.numcol/2]
+
+        if self.checkpoint:
+            if self.chkpassed:
+                #Go to goal 
+                if(list(self._state[:2])==goal1):
+                    done=True
+                    reward=10
+            else:
+                #go to checkpoint
+                if(list(self._state[:2])==goal2):
+                    self.chkpassed=True
+        else:
+            #check if goal
+            if(list(self._state[:2])==goal1):
+                done=True
+                reward=10
+
         move_probs=[0.025,0.025,0.025,0.025]
         move_probs[action]+=0.9
         mov=np.random.choice([0,1,2,3],p=move_probs)
@@ -32,22 +49,6 @@ class DualGoalEnv(Env):
             new_state[1]=new_state[1]+mov_dic[mov][1]
         self._state=new_state
 
-        if self.checkpoint:
-            if self.chkpassed:
-                #Go to goal 
-                if(list(self._state[:2])==goal1):
-                    reward=10
-                    done=True
-            else:
-                #go to checkpoint
-                if(list(self._state[:2])==goal2):
-                    self.chkpassed=True
-
-        else:
-            #check if goal
-            if(list(self._state[:2])==goal1):
-                reward=10
-                done=True
 
         return np.copy(self._state), reward, done, {}
 

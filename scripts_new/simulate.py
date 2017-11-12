@@ -1,4 +1,4 @@
-
+import networkx as nx
 import joblib
 import os
 import matplotlib.pyplot as plt
@@ -84,39 +84,75 @@ def load_env_policy(filepath):
 def visualize(env, policy, n_traj, max_steps, render=False):
     trajs = []
     for i in range(n_traj):
-        sys.stdout.write('\rtraj {} / {}'.format(i, n_traj))
+        # sys.stdout.write('\rtraj {} / {}'.format(i, n_traj))
         traj = hgail.misc.simulation.simulate(env, policy, max_steps, render=render)
         trajs.append(traj)
-    print('\nmean path len: {}'.format(np.mean([len(d['rewards']) for d in trajs])))
+    print('{}'.format(np.mean([len(d['rewards']) for d in trajs])))
     return trajs
-        
+
+def plot_trajectories(trajs,num):
+    X=[]
+    Y=[]
+    dic={}
+    for i in range(6):
+        for j in range(6):
+            dic[(i,j)]=0
+    for i in range(num):
+        X+=[map(lambda x:x[0][0],map(np.nonzero,trajs[i]['observations']))]
+        Y+=[map(lambda x:x[0][1]-6,map(np.nonzero,trajs[i]['observations']))]
+    # for i in range(len(X)):
+    #     for j in range(len(X[i])):
+    #         dic[(X[i][j],Y[i][j])]+=1
+    # for i in range(6):
+    #     for j in range(6):
+    #         print dic[(i,j)],
+    #     print '\n'  
+
+    for i in range(len(X)):
+        plt.plot(X[i],Y[i],'r')
+    plt.axis([-1,6,-1,6])
+    plt.show()
+
 if __name__ == '__main__':
     '''
     Comment out the first code block (starting with collect) to visualize the 
     learned infogail policy, comment out the second to collect expert trajectories
     '''
 
-    exp_list = ['DualGoalEnv00','DualGoalEnv01','DualGoalEnv10','DualGoalEnv11']
+    # exp_list = ['DualGoalEnv00','DualGoalEnv10',"DualGoalEnv01","DualGoalEnv11"]
 
-    # collect expert trajectories
-    itr = 45
-    trajectories=[]
+    # # collect expert trajectories
+    # itr = 95
+    # trajectories=[]
     # for exp_name in exp_list:
     #     input_filepath = '../data/experiments/{}/train/log/itr_{}.pkl'.format(exp_name, itr)
     #     output_dir = '../data/experiments/{}/collection/'.format(exp_name)
     #     utils.maybe_mkdir(output_dir)
     #     output_filepath = os.path.join(output_dir, 'expert_traj.h5')
-    #     trajectories += collect(input_filepath, n_traj=500, max_steps=1000)
+    #     trajectories+= collect(input_filepath, n_traj=1000, max_steps=1000)
+    #     # plot_trajectories(trajs)
     # shuffle(trajectories)
     # hgail.misc.simulation.write_trajectories(trajectories, output_filepath)
 
     # visualzie gail policy
-    itr = 995
-    phase = 'imitate'
-    input_filepath = '../data/experiments/{}/{}/log/itr_{}.pkl'.format('DualGoalEnv11', phase, itr)
-    with tf.Session() as session:
-        env, policy = load_env_policy(input_filepath)
-        env = DualGoalEnv(typ=2)
-        env = normalize(env)
-        env = TfEnv(env)
-        trajs = visualize(env, policy, n_traj=10, max_steps=1000, render=True)
+    itr = 215
+    for itr in [30]:
+        tf.reset_default_graph()
+        phase = 'imitate'
+        input_filepath = '../data/experiments/{}/{}/log/itr_{}.pkl'.format('DualGoalEnv11', phase, itr)
+        with tf.Session() as session:
+            env, policy = load_env_policy(input_filepath)
+            env = DualGoalEnv(typ=0)
+            env = normalize(env)
+            env = TfEnv(env)
+            trajs = visualize(env, policy, n_traj=150, max_steps=100, render=False)
+            l1=[]
+            l2=[]
+            for i in range(150):
+                if(list(trajs[i]['agent_infos'][0]['latent'])==[1,0]):
+                    l1+=[trajs[i]]
+                else:
+                    l2+=[trajs[i]]
+            plot_trajectories(l1,len(l1))
+            plot_trajectories(l2,len(l2))
+

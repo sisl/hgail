@@ -35,7 +35,7 @@ saver_filepath = os.path.join(saver_dir, 'checkpoint')
 # constants
 use_infogail = True
 use_critic_replay_memory = True
-latent_dim = 1
+latent_dim = 2
 real_data_maxsize = None
 batch_size = 8000
 n_critic_train_epochs = 50
@@ -64,6 +64,7 @@ env = TfEnv(env)
 expert_data_filepath = os.path.join(exp_dir, 'collection', 'expert_traj.h5')
 data = hgail.misc.utils.load_dataset(expert_data_filepath, maxsize=real_data_maxsize)
 data['actions'] = hgail.misc.utils.to_onehot(data['actions'], dim=env.action_space.flat_dim)
+
 if use_critic_replay_memory:
     critic_replay_memory = hgail.misc.utils.KeyValueReplayMemory(maxsize=3 *  batch_size)
 else:
