@@ -164,50 +164,49 @@ class RecognitionModel(object):
             self.summary_writer.add_summary(tf.Summary.FromString(summary), step)
             self.summary_writer.flush()
 
-    def _build_loss(self, scores, targets):
-        if self.variable_type == 'categorical':
-            loss = tf.nn.softmax_cross_entropy_with_logits(labels=targets, logits=scores)
-
-        elif self.variable_type == 'uniform':
-            raise NotImplementedError
-
-        else:
-            raise ValueError('variable_type not implemented: {}'.format(self.variable_type))
-
-        return loss
-
-    def _build_summaries(self, loss, latent, probs, gradients, var_list, batch_size=None):
-        summaries = []
-        summaries += [tf.summary.scalar('{}/loss'.format(self.name), loss)]
-        summaries += [tf.summary.scalar('{}/mean_c'.format(self.name), tf.reduce_mean(latent))]
-        summaries += [tf.summary.scalar('{}/mean_probs'.format(self.name), tf.reduce_mean(probs))]
-        summaries += [tf.summary.scalar('{}/global_grad_norm'.format(self.name), tf.global_norm(gradients))]
-        summaries += [tf.summary.scalar('{}/global_var_norm'.format(self.name), tf.global_norm(var_list))]
-        if batch_size is not None:
-            summaries += [tf.summary.scalar('{}/batch_size'.format(self.name), batch_size)]
-        return summaries
-
     def _build_model(self):
         """
         Builds the recognition model loss and train operation
         """
-        # placeholders for input
-        self.x = x = tf.placeholder(tf.float32, shape=(None, self.obs_dim), name='x')
-        self.a = a = tf.placeholder(tf.float32, shape=(None, self.act_dim), name='a')
-        self.c = c = tf.placeholder(tf.float32, shape=(None, self.latent_dim), name='c')
-        scores = self.network(x, a)
-        self.probs = tf.nn.softmax(scores)
-        loss = tf.reduce_mean(self._build_loss(scores, c))
+        self._build_placeholders()
+        self._forward()
+        self._build_loss()
+        self._build_train_op()
+        self._build_summaries()
 
-        if self.verbose >= 2:
-                loss = tf.Print(loss, [loss], message='recognition loss: ')
-
-        # build train op
-        gradients = tf.gradients(loss, self.network.var_list)
-        grads_vars = [(g,v) for (g,v) in zip(gradients, self.network.var_list)]
+    def _build_placeholders(self):
+        self.x = tf.placeholder(tf.float32, shape=(None, self.obs_dim), name='x')
+        self.a = tf.placeholder(tf.float32, shape=(None, self.act_dim), name='a')
+        self.c = tf.placeholder(tf.float32, shape=(None, self.latent_dim), name='c')
         self.global_step = tf.Variable(0, name='recognition_model/global_step', trainable=False)
+
+    def _forward(self):
+        self.scores = self.network(self.x, self.a)
+        self.probs = tf.nn.softmax(self.scores)
+
+    def _build_loss(self):
+        loss = tf.nn.softmax_cross_entropy_with_logits(labels=self.c, logits=self.scores)
+        self.loss = tf.reduce_mean(loss)
+        if self.verbose >= 2:
+            loss = tf.Print(self.loss, [self.loss], message='recognition loss: ')
+
+    def _build_train_op(self):
+        self.gradients = gradients = tf.gradients(self.loss, self.network.var_list)
+        grads_vars = [(g,v) for (g,v) in zip(gradients, self.network.var_list)]
         self.train_op = self.optimizer.apply_gradients(grads_vars, global_step=self.global_step)
 
-        # summaries
-        summaries = self._build_summaries(loss, c, self.probs, gradients, self.network.var_list, tf.shape(x)[0])
-        self.summary_op = tf.summary.merge(summaries)
+    def _build_summaries(self):
+        summaries = []
+        summaries += [tf.summary.scalar('{}/loss'.format(self.name), self.loss)]
+        summaries += [tf.summary.scalar('{}/mean_c'.format(self.name), 
+            tf.reduce_mean(self.c))]
+        summaries += [tf.summary.scalar('{}/mean_probs'.format(self.name), 
+            tf.reduce_mean(self.probs))]
+        summaries += [tf.summary.scalar('{}/global_grad_norm'.format(self.name), 
+            tf.global_norm(self.gradients))]
+        summaries += [tf.summary.scalar('{}/global_var_norm'.format(self.name), 
+            tf.global_norm(self.network.var_list))]
+        self.summaries = summaries
+        self.summary_op = tf.summary.merge(self.summaries)
+        
+        

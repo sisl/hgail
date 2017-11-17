@@ -197,6 +197,7 @@ class RecognitionDataset(object):
             latent_variable_type='categorical',
             recurrent=False,
             conditional=False,
+            domain=False,
             cond_key=None):
         self.batch_size = batch_size
         self.action_normalizer = action_normalizer
@@ -206,6 +207,7 @@ class RecognitionDataset(object):
         assert cond_key is not None or not conditional
         self.conditional = conditional
         self.cond_key = cond_key
+        self.domain = domain
 
     def _normalize(self, data):
         # normalize actions
@@ -254,6 +256,10 @@ class RecognitionDataset(object):
             # add valids if recurrent
             if self.recurrent:
                 batch['valids'] = sd['valids'][idxs]
+
+            # if domain then extracts the domain from the env infos
+            if self.domain:
+                batch['d'] = sd['env_infos']['domain'][idxs]
 
             # yield a batch of data
             yield batch

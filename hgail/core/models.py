@@ -65,6 +65,48 @@ class Network(object):
         session = tf.get_default_session()
         session.run(assign)
 
+class Classifier(Network):
+    
+    def __init__(
+            self,
+            name,
+            hidden_layer_dims,
+            output_dim=1,
+            activation_fn=tf.nn.relu,
+            dropout_keep_prob=1.,
+            **kwargs):
+        super(Classifier, self).__init__(name=name, **kwargs)
+        self.name = name
+        self.hidden_layer_dims = hidden_layer_dims
+        self.output_dim = output_dim
+        self.activation_fn = activation_fn
+        self.dropout_keep_prob = dropout_keep_prob
+        self.dropout_keep_prob_ph = tf.placeholder_with_default(
+            self.dropout_keep_prob, 
+            shape=(), 
+            name='dropout_keep_prob_ph'
+        )
+
+    def _build(self, inputs):
+        hidden = _build_dense_module(
+            '{}/hidden'.format(self.name),
+            inputs, 
+            self.hidden_layer_dims,
+            activation_fn=self.activation_fn,
+            dropout_keep_prob=self.dropout_keep_prob_ph
+        )
+        # score
+        score = _build_score_module(
+            '{}/scores'.format(self.name), 
+            hidden, 
+            output_dim=self.output_dim
+        )      
+        return score
+
+    def forward(self, inputs, deterministic=False):
+        extra_feed = {self.dropout_keep_prob_ph: 1.} if deterministic else {}
+        return self._run([inputs], extra_feed=extra_feed)   
+
 class ObservationActionMLP(Network):
 
     def __init__(
@@ -76,6 +118,7 @@ class ObservationActionMLP(Network):
             act_hidden_layer_dims=[],
             activation_fn=tf.nn.relu,
             dropout_keep_prob=1.,
+            return_features=False,
             **kwargs):
         super(ObservationActionMLP, self).__init__(name=name, **kwargs)
         self.output_dim = output_dim
@@ -84,6 +127,7 @@ class ObservationActionMLP(Network):
         self.hidden_layer_dims = hidden_layer_dims
         self.activation_fn = activation_fn
         self.dropout_keep_prob = dropout_keep_prob
+        self.return_features = return_features
         self.dropout_keep_prob_ph = tf.placeholder_with_default(
             self.dropout_keep_prob, 
             shape=(), 
@@ -109,20 +153,28 @@ class ObservationActionMLP(Network):
         )
         # hidden layers
         hidden = tf.concat([obs_hidden, act_hidden], axis=1)
-        hidden = _build_dense_module(
-            '{}/hidden'.format(self.name),
-            hidden, 
-            self.hidden_layer_dims,
-            activation_fn=self.activation_fn,
-            dropout_keep_prob=self.dropout_keep_prob_ph
-        )
+        features = [hidden]
+        with tf.variable_scope('{}/hidden'.format(self.name)):
+            for hidden_dim in self.hidden_layer_dims:
+                hidden = tf.contrib.layers.fully_connected(
+                            hidden, 
+                            hidden_dim,
+                            activation_fn=self.activation_fn,
+                            biases_initializer=tf.constant_initializer(0.1))
+                features.append(hidden)
+                hidden = tf.nn.dropout(hidden, self.dropout_keep_prob_ph)
+
         # score
         score = _build_score_module(
             '{}/scores'.format(self.name), 
             hidden, 
             output_dim=self.output_dim
-        )                
-        return score
+        )         
+
+        if self.return_features:
+            return score, features
+        else:       
+            return score
     
     def forward(self, obs, act, deterministic=False):
         extra_feed = {self.dropout_keep_prob_ph: 1.} if deterministic else {}
