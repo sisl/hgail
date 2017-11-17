@@ -18,8 +18,9 @@ from hgail.misc.datasets import CriticDataset, RecognitionDataset
 from hgail.policies.categorical_latent_var_mlp_policy import CategoricalLatentVarMLPPolicy
 from hgail.algos.gail import GAIL
 from hgail.policies.latent_sampler import UniformlyRandomLatentSampler
-from hgail.core.models import ObservationActionMLP
+from hgail.core.models import ObservationActionMLP, Classifier
 from hgail.recognition.recognition_model import RecognitionModel
+from hgail.recognition.domain_adversarial_recognition_model import DomainAdvRecognitionModel
 from hgail.policies.scheduling import ConstantIntervalScheduler
 import hgail.misc.utils
 
@@ -35,6 +36,7 @@ saver_filepath = os.path.join(saver_dir, 'checkpoint')
 # constants
 use_infogail = True
 use_critic_replay_memory = True
+use_domain_aversarial_recognition = True # new!
 latent_dim = 2
 real_data_maxsize = None
 batch_size = 8000
@@ -103,25 +105,57 @@ with tf.Session() as session:
     )
 
     if use_infogail:
-        # recognition model
-        recognition_dataset = RecognitionDataset(batch_size)
-        recognition_network = ObservationActionMLP(
-            name='recog', 
-            hidden_layer_dims=[32,32],
-            output_dim=latent_dim
-        )
-        recognition_model = RecognitionModel(
-            obs_dim=env.observation_space.flat_dim,
-            act_dim=env.action_space.n,
-            dataset=recognition_dataset, 
-            network=recognition_network,
-            variable_type='categorical',
-            latent_dim=latent_dim,
-            optimizer=tf.train.AdamOptimizer(recognition_learning_rate, beta1=.5, beta2=.9),
-            n_train_epochs=n_recognition_train_epochs,
-            summary_writer=summary_writer,
-            verbose=2
-        )
+        if use_domain_aversarial_recognition:
+            recognition_dataset = RecognitionDataset(
+                batch_size=batch_size,
+                domain=True
+            )
+            latent_classifier = ObservationActionMLP(
+                name='latent_classifier', 
+                hidden_layer_dims=[32,32],
+                output_dim=2,
+                return_features=True
+            )
+
+            domain_classifier = Classifier(
+                name='domain_classifier',
+                hidden_layer_dims=[32,32],
+                output_dim=2
+            )
+
+            recognition_model = DomainAdvRecognitionModel(
+                latent_classifier=latent_classifier,
+                domain_classifier=domain_classifier,
+                obs_dim=env.observation_space.flat_dim,
+                act_dim=env.action_space.n,
+                dataset=recognition_dataset, 
+                variable_type='categorical',
+                latent_dim=latent_dim,
+                optimizer=tf.train.AdamOptimizer(recognition_learning_rate, beta1=.5, beta2=.9),
+                n_train_epochs=n_recognition_train_epochs,
+                summary_writer=summary_writer,
+                verbose=2
+            )
+        else:
+            # recognition model
+            recognition_dataset = RecognitionDataset(batch_size)
+            recognition_network = ObservationActionMLP(
+                name='recog', 
+                hidden_layer_dims=[32,32],
+                output_dim=latent_dim
+            )
+            recognition_model = RecognitionModel(
+                obs_dim=env.observation_space.flat_dim,
+                act_dim=env.action_space.n,
+                dataset=recognition_dataset, 
+                network=recognition_network,
+                variable_type='categorical',
+                latent_dim=latent_dim,
+                optimizer=tf.train.AdamOptimizer(recognition_learning_rate, beta1=.5, beta2=.9),
+                n_train_epochs=n_recognition_train_epochs,
+                summary_writer=summary_writer,
+                verbose=2
+            )
 
         # build the policy
         latent_sampler = UniformlyRandomLatentSampler(

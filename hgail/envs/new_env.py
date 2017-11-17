@@ -1,7 +1,10 @@
+
+import numpy as np
+
 from rllab.envs.base import Env
 from rllab import spaces
 
-import numpy as np
+from hgail.misc.utils import to_onehot
 
 mov_dic={0:[0,1],1:[1,0],2:[-1,0],3:[0,-1]}
 class DualGoalEnv(Env):
@@ -49,8 +52,8 @@ class DualGoalEnv(Env):
             new_state[1]=new_state[1]+mov_dic[mov][1]
         self._state=new_state
 
-
-        return np.copy(self._state), reward, done, {}
+        env_info = dict(domain=to_onehot(np.reshape(self._state[-1], (1,1)), 2)[0])
+        return np.copy(self._state), reward, done, env_info
 
     def reset(self):
         self._state=[0,0,self.type]
@@ -59,8 +62,10 @@ class DualGoalEnv(Env):
         self.chkpassed=False
         observation = np.copy(self._state)
         return observation
+
     def render(self):
         print('current state:', self._state)
+        
     @property
     def action_space(self):
         return spaces.Discrete(4)

@@ -92,6 +92,9 @@ class DomainAdvRecognitionModel(RecognitionModel):
         true = tf.cast(tf.argmax(self.c, axis=-1), tf.float32)
         self.acc = tf.reduce_mean(tf.cast(tf.equal(pred, true), tf.float32))
 
+        if self.verbose >= 2:
+            self.loss = tf.Print(self.loss, [self.acc, self.domain_acc], message='acc, domain acc: ')
+
     def _build_train_op(self):
         all_network_var_list = self.latent_classifier.var_list + self.domain_classifier.var_list
         self.gradients = tf.gradients(self.loss, all_network_var_list)
