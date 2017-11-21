@@ -24,6 +24,8 @@ class DomainAdvRecognitionModel(RecognitionModel):
                 lambda_initial=0.,
                 lambda_steps=1000,
                 lambda_final=1.,
+                grad_clip=1000.,
+                grad_scale=1000.,
                 **kwargs):
         self.latent_classifier = latent_classifier
         self.domain_classifier = domain_classifier
@@ -31,6 +33,8 @@ class DomainAdvRecognitionModel(RecognitionModel):
         self.lambda_initial = lambda_initial
         self.lambda_steps = lambda_steps
         self.lambda_final = lambda_final
+        self.grad_clip = grad_clip
+        self.grad_scale = grad_scale
         super(DomainAdvRecognitionModel, self).__init__(latent_classifier, *args, **kwargs)
 
     def _train_batch(self, batch):
@@ -72,16 +76,18 @@ class DomainAdvRecognitionModel(RecognitionModel):
         self.probs = tf.nn.softmax(self.scores)
         flipped_features = flip_gradient(self.features, self.lmbda)
         self.domain_scores = self.domain_classifier(flipped_features)
+        # self.domain_scores = self.domain_classifier(tf.stop_gradient(self.features))
         self.domain_probs = tf.nn.softmax(self.domain_scores)
 
     def _build_loss(self):
         super(DomainAdvRecognitionModel, self)._build_loss()
         self.pred_loss = self.loss
+        self.reg_loss = tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
         self.domain_adv_loss = tf.reduce_mean(
                 tf.nn.softmax_cross_entropy_with_logits(
                     labels=self.d, logits=self.domain_scores))
-        self.loss = self.pred_loss + self.domain_adv_loss
-
+        self.loss = self.pred_loss + self.reg_loss + self.domain_adv_loss
+        
         # domain accuracy
         pred = tf.cast(tf.argmax(self.domain_scores, axis=-1), tf.float32)
         true = tf.cast(tf.argmax(self.d, axis=-1), tf.float32)
@@ -93,13 +99,19 @@ class DomainAdvRecognitionModel(RecognitionModel):
         self.acc = tf.reduce_mean(tf.cast(tf.equal(pred, true), tf.float32))
 
         if self.verbose >= 2:
-            self.loss = tf.Print(self.loss, [self.acc, self.domain_acc], message='acc, domain acc: ')
+            self.loss = tf.Print(self.loss, 
+                [self.loss, self.acc, self.domain_acc], 
+                message='data_loss, domain_loss, acc, domain acc: ')
 
     def _build_train_op(self):
-        all_network_var_list = self.latent_classifier.var_list + self.domain_classifier.var_list
-        self.gradients = tf.gradients(self.loss, all_network_var_list)
-        grads_vars = [(g,v) for (g,v) in zip(self.gradients, self.network.var_list)]
-        self.train_op = self.optimizer.apply_gradients(grads_vars, global_step=self.global_step)
+        self.all_network_var_list = self.latent_classifier.var_list + self.domain_classifier.var_list
+        self.gradients = tf.gradients(self.loss, self.all_network_var_list)
+        self.clipped_gradients, _ = tf.clip_by_global_norm(self.gradients, self.grad_scale)
+        clip_grads_vars = [(tf.clip_by_value(g, -self.grad_clip, self.grad_clip),v)
+            for (g,v) in zip(self.clipped_gradients, self.all_network_var_list)]
+        self.clipped_gradients = [g for (g,_) in clip_grads_vars]
+        self.train_op = self.optimizer.apply_gradients(
+            clip_grads_vars, global_step=self.global_step)
 
     def _build_summaries(self):
         super(DomainAdvRecognitionModel, self)._build_summaries()
@@ -108,4 +120,6 @@ class DomainAdvRecognitionModel(RecognitionModel):
         self.summaries += [tf.summary.scalar('{}/lambda'.format(self.name), self.lmbda)]
         self.summaries += [tf.summary.scalar('{}/domain_acc'.format(self.name), self.domain_acc)]
         self.summaries += [tf.summary.scalar('{}/acc'.format(self.name), self.acc)]
+        self.summaries += [tf.summary.scalar('{}/clip_grad_norm'.format(self.name), 
+            tf.global_norm(self.clipped_gradients))]
         self.summary_op = tf.summary.merge(self.summaries)

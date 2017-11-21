@@ -7,7 +7,8 @@ def _build_dense_module(
         hidden_layer_dims,
         activation_fn=tf.nn.relu,
         bias_initializer=tf.constant_initializer(0.1),
-        dropout_keep_prob=1.):
+        dropout_keep_prob=1.,
+        weights_regularizer=None):
     with tf.variable_scope(name):
         hidden = inputs
         for hidden_dim in hidden_layer_dims:
@@ -15,17 +16,23 @@ def _build_dense_module(
                         hidden, 
                         hidden_dim, 
                         activation_fn=activation_fn,
-                        biases_initializer=bias_initializer)
+                        biases_initializer=bias_initializer,
+                        weights_regularizer=weights_regularizer)
             hidden = tf.nn.dropout(hidden, dropout_keep_prob)
         return hidden
 
-def _build_score_module(name, hidden, output_dim=1):
+def _build_score_module(
+        name, 
+        hidden, 
+        output_dim=1, 
+        weights_regularizer=None):
     with tf.variable_scope(name):
         scores = tf.contrib.layers.fully_connected(
                     hidden, 
                     output_dim, 
                     activation_fn=None, 
-                    biases_initializer=tf.constant_initializer(0.0))
+                    biases_initializer=tf.constant_initializer(0.0),
+                    weights_regularizer=weights_regularizer)
         return scores
 
 class Network(object):
@@ -74,6 +81,7 @@ class Classifier(Network):
             output_dim=1,
             activation_fn=tf.nn.relu,
             dropout_keep_prob=1.,
+            l2_reg=0.,
             **kwargs):
         super(Classifier, self).__init__(name=name, **kwargs)
         self.name = name
@@ -86,6 +94,7 @@ class Classifier(Network):
             shape=(), 
             name='dropout_keep_prob_ph'
         )
+        self.l2_reg = l2_reg
 
     def _build(self, inputs):
         hidden = _build_dense_module(
@@ -93,13 +102,15 @@ class Classifier(Network):
             inputs, 
             self.hidden_layer_dims,
             activation_fn=self.activation_fn,
-            dropout_keep_prob=self.dropout_keep_prob_ph
+            dropout_keep_prob=self.dropout_keep_prob_ph,
+            weights_regularizer=tf.contrib.layers.l2_regularizer(self.l2_reg)
         )
         # score
         score = _build_score_module(
             '{}/scores'.format(self.name), 
             hidden, 
-            output_dim=self.output_dim
+            output_dim=self.output_dim,
+            weights_regularizer=tf.contrib.layers.l2_regularizer(self.l2_reg)
         )      
         return score
 
@@ -118,6 +129,7 @@ class ObservationActionMLP(Network):
             act_hidden_layer_dims=[],
             activation_fn=tf.nn.relu,
             dropout_keep_prob=1.,
+            l2_reg=0.,
             return_features=False,
             **kwargs):
         super(ObservationActionMLP, self).__init__(name=name, **kwargs)
@@ -133,6 +145,7 @@ class ObservationActionMLP(Network):
             shape=(), 
             name='dropout_keep_prob_ph'
         )
+        self.l2_reg = l2_reg
 
     def _build(self, obs, act):
         # obs
@@ -141,7 +154,8 @@ class ObservationActionMLP(Network):
             obs, 
             self.obs_hidden_layer_dims, 
             activation_fn=self.activation_fn,
-            dropout_keep_prob=self.dropout_keep_prob_ph
+            dropout_keep_prob=self.dropout_keep_prob_ph,
+            weights_regularizer=tf.contrib.layers.l2_regularizer(self.l2_reg)
         )
         # act
         act_hidden = _build_dense_module(
@@ -149,7 +163,8 @@ class ObservationActionMLP(Network):
             act, 
             self.act_hidden_layer_dims,
             activation_fn=self.activation_fn,
-            dropout_keep_prob=self.dropout_keep_prob_ph
+            dropout_keep_prob=self.dropout_keep_prob_ph,
+            weights_regularizer=tf.contrib.layers.l2_regularizer(self.l2_reg)
         )
         # hidden layers
         hidden = tf.concat([obs_hidden, act_hidden], axis=1)
@@ -160,7 +175,8 @@ class ObservationActionMLP(Network):
                             hidden, 
                             hidden_dim,
                             activation_fn=self.activation_fn,
-                            biases_initializer=tf.constant_initializer(0.1))
+                            biases_initializer=tf.constant_initializer(0.1),
+                            weights_regularizer=tf.contrib.layers.l2_regularizer(self.l2_reg))
                 features.append(hidden)
                 hidden = tf.nn.dropout(hidden, self.dropout_keep_prob_ph)
 
@@ -168,7 +184,8 @@ class ObservationActionMLP(Network):
         score = _build_score_module(
             '{}/scores'.format(self.name), 
             hidden, 
-            output_dim=self.output_dim
+            output_dim=self.output_dim,
+            weights_regularizer=tf.contrib.layers.l2_regularizer(self.l2_reg)
         )         
 
         if self.return_features:
