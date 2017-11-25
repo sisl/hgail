@@ -19,13 +19,13 @@ class DomainAdvRecognitionModel(RecognitionModel):
     def __init__(self,
                 latent_classifier,
                 domain_classifier,
-                *args,
                 domain_dim=2,
                 lambda_initial=0.,
                 lambda_steps=1000,
                 lambda_final=1.,
                 grad_clip=1000.,
                 grad_scale=1000.,
+                *args,
                 **kwargs):
         self.latent_classifier = latent_classifier
         self.domain_classifier = domain_classifier

@@ -16,8 +16,8 @@ import utils
 batch_size = 5000
 max_path_length = 100
 
-exp_name = ["DualGoalEnv00","DualGoalEnv10","DualGoalEnv01","DualGoalEnv11"]
-envL = [DualGoalEnv(),DualGoalEnv(checkpoint=True),DualGoalEnv(typ=1),DualGoalEnv(checkpoint=True,typ=1)]
+exp_name = ["DualGoalEnv00","DualGoalEnv01","DualGoalEnv10","DualGoalEnv11"]
+envL = [DualGoalEnv(task=0,typ=0),DualGoalEnv(task=0,typ=1),DualGoalEnv(task=1,typ=0),DualGoalEnv(task=1,typ=1)]
 
 for i in range(4):
     env = envL[i]
@@ -37,7 +37,7 @@ for i in range(4):
         baseline=baseline,
         batch_size=batch_size,
         max_path_length=max_path_length,
-        n_itr=100,
+        n_itr=26,
         discount=0.99,
         step_size=0.015
     )
