@@ -21,6 +21,8 @@ class GAIL(TRPO):
             saver=None,
             saver_filepath=None,
             validator=None,
+            snapshot_env=True,
+            normalize_obs=False,
             **kwargs):
         """
         Args:
@@ -33,6 +35,7 @@ class GAIL(TRPO):
         self.saver = saver
         self.saver_filepath = saver_filepath
         self.validator = validator
+        self.snapshot_env = snapshot_env
         super(GAIL, self).__init__(**kwargs)
     
     @overrides
@@ -117,8 +120,9 @@ class GAIL(TRPO):
             itr=itr,
             policy=self.policy,
             baseline=self.baseline,
-            env=self.env
         )
+        if self.snapshot_env:
+            snapshot['env'] = self.env
         if samples_data is not None:
             snapshot['samples_data'] = dict()
             if 'actions' in samples_data.keys():

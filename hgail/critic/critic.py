@@ -85,7 +85,7 @@ class Critic(object):
             ])
             self.summary_writer.add_summary(summary, itr)
             self.summary_writer.flush()
-    
+
     def train(self, itr, samples_data):
         """
         Train the critic using real and sampled data
