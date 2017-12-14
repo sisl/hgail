@@ -48,7 +48,7 @@ class Critic(object):
 
         # normalize
         if self.dataset.observation_normalizer:
-            obs = self.dataset.observation_normalizer(acts)
+            obs = self.dataset.observation_normalizer(obs)
         if self.dataset.action_normalizer:
             acts = self.dataset.action_normalizer(acts)
 
