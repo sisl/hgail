@@ -53,9 +53,6 @@ class Dataset(object):
         self.n_samples = len(data['observations']) # number of real samples
         self.next_idx = 0
 
-        # normalize own data conditional on having action and observation normalizers
-        self._normalize(self.data)
-
     def _normalize(self, data):
         # normalize actions in the dataset to ensure consistency with generated actions
         if self.action_normalizer:

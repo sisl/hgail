@@ -52,7 +52,7 @@ class RewardHandler(object):
             critic_initial_scale=1.,
             critic_final_scale=1.,
             recognition_initial_scale=1,
-            recognition_final_scale=0.14,
+            recognition_final_scale=1.,
             augmentation_scale=1.,
             normalize_rewards=False,
             alpha=.01,
