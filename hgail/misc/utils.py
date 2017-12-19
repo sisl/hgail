@@ -198,6 +198,30 @@ class ActionNormalizer(object):
     def __call__(self, act):
         return self.normalize(act)
 
+class ActionRangeNormalizer(object):
+    '''
+    Converts from [low,high] range to [-1,1] range
+    It's the inverse of a normalizing wrapper around an environment
+    This should be applied to real data, where low and high are the bounds 
+    within the environment. The reason is that the agent actions should be
+    output in the range [-1,1], then mapped to the actual ranges by the 
+    environement wrapper `normalize`. Thus, we want the real data to go 
+    through the inverse mapping. From the environment bounds to the [-1,1].
+    '''
+    
+    def __init__(self, low, high):
+        low = np.array(low)
+        high = np.array(high)
+        self.half_range = (high - low) / 2.
+        self.mean = (high + low) / 2.
+    
+    def normalize(self, act):
+        act = (act - self.mean) / self.half_range
+        act = np.clip(act, -1, 1)
+        return act
+
+    def __call__(self, act):
+        return self.normalize(act)
 
 def load_dataset(filepath, maxsize=None):
     f = h5py.File(filepath, 'r')

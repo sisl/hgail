@@ -224,5 +224,26 @@ class TestNumpyUtils(unittest.TestCase):
         logits = np.array([ 0.866008,  0.393137, -0.490158])
         probs = hgail.misc.utils.softmax(logits)
 
+class TestActionRangeNormalizer(unittest.TestCase):
+
+    def test_normalize(self):
+        low = [-1,-2]
+        high = [2,2]
+        normalizer = hgail.misc.utils.ActionRangeNormalizer(low, high)
+        
+        inputs = [
+            [-1,-2],
+            [2,2],
+            [.5,0]
+        ]
+        outputs = [
+            [-1,-1],
+            [1,1],
+            [0,0]
+        ]
+        for (inpt, out) in zip(inputs, outputs):
+            actual = normalizer(inpt)
+            np.testing.assert_array_almost_equal(out, actual)
+
 if __name__ == '__main__':
     unittest.main()
