@@ -22,7 +22,6 @@ class GAIL(TRPO):
             saver_filepath=None,
             validator=None,
             snapshot_env=True,
-            normalize_obs=False,
             **kwargs):
         """
         Args:

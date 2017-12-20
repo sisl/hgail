@@ -400,3 +400,17 @@ class KeyValueReplayMemory(object):
         for key in keys:
             sample[key] = np.take(self.mem[key], idxs, axis=0)
         return sample
+
+'''
+rllab utils
+'''
+def extract_wrapped_env(env, typ):
+    while not isinstance(env, typ):
+        # descend to wrapped env
+        if hasattr(env, 'wrapped_env'):
+            env = env.wrapped_env
+        # not the desired type, and has no wrapped env, return None
+        else:
+            return None
+    # reaches this point, then the env is of the desired type, return it
+    return env
