@@ -9,13 +9,14 @@ class Trajectory(collections.defaultdict):
     def __init__(self):
         super(Trajectory, self).__init__(list)
 
-    def add(self, x, a, r, a_info):
+    def add(self, x, a, r, a_info, env_info):
         self['observations'].append(x)
         if type(a) == int or type(a) == float:
             a = [a]
         self['actions'].append(a)
         self['rewards'].append(r)
         self['agent_infos'].append(a_info)
+        self['env_infos'].append(env_info)
 
 def write_trajectories(trajs, filepath, timeseries=False):
     '''
@@ -48,7 +49,8 @@ def simulate(env, policy, max_steps, render=False):
             policy.observation_space.flatten(x), 
             a, 
             r, 
-            a_info
+            a_info,
+            e_info
         )
         if done: break
         x = nx
