@@ -188,7 +188,7 @@ class RecognitionModel(object):
         loss = tf.nn.softmax_cross_entropy_with_logits(labels=self.c, logits=self.scores)
         self.loss = tf.reduce_mean(loss)
         if self.verbose >= 2:
-            loss = tf.Print(self.loss, [self.loss], message='recognition loss: ')
+            self.loss = tf.Print(self.loss, [self.loss], message='recognition loss: ')
 
     def _build_train_op(self):
         self.gradients = gradients = tf.gradients(self.loss, self.network.var_list)

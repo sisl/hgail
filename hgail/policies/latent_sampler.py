@@ -49,7 +49,7 @@ class LatentSampler(object):
                 relevant to this latent sampler
         '''
         with tf.variable_scope(self.name):
-            if state_info_vars is not None:
+            if state_info_vars is not None and self.latent_name in state_info_vars.keys():
                 latent = state_info_vars[self.latent_name]
             else:
                 latent = self.latent
