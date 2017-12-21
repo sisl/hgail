@@ -7,6 +7,8 @@ import os
 import skimage.transform
 import tensorflow as tf
 
+from rllab.envs.normalized_env import NormalizedEnv
+
 '''
 Reward utils
 '''
@@ -258,7 +260,7 @@ def save_params(output_dir, params, epoch, max_to_keep=None):
         os.mkdir(output_dir)
 
     # save 
-    output_filepath = os.path.join(output_dir, str(epoch))
+    output_filepath = os.path.join(output_dir, 'itr_{}'.format(epoch))
     np.savez(output_filepath, params=params)
 
     # delete files if in excess of max_to_keep
@@ -271,11 +273,7 @@ def save_params(output_dir, params, epoch, max_to_keep=None):
                 os.remove(filepath)
 
 def load_params(filepath):
-    if filepath != '':
-        params = np.load(filepath)['params']
-    else:
-        params = None
-    return params
+    return np.load(filepath)['params'].item()
 
 '''
 numpy utils
@@ -414,3 +412,6 @@ def extract_wrapped_env(env, typ):
             return None
     # reaches this point, then the env is of the desired type, return it
     return env
+
+def extract_normalizing_env(env):
+    return extract_wrapped_env(env, NormalizedEnv)

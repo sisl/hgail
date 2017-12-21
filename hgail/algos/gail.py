@@ -82,20 +82,36 @@ class GAIL(TRPO):
         """
         # using keep_checkpoint_every_n_hours as proxy for iterations between saves
         if self.saver and (itr + 1) % self.saver._keep_checkpoint_every_n_hours == 0:
-            self.saver.save(
-                tf.get_default_session(), 
-                self.saver_filepath, 
-                global_step=itr
-            )
 
-            # save critic and policy params
-            save_dir = os.path.join(os.path.split(self.saver_filepath)[0], 'critic')
-            critic_params = self.critic.network.get_param_values()
-            hgail.misc.utils.save_params(save_dir, critic_params, itr, max_to_keep=50)
-            save_dir = os.path.join(os.path.split(self.saver_filepath)[0], 'policy')
-            policy_params = self.policy.get_param_values()
-            hgail.misc.utils.save_params(save_dir, policy_params, itr, max_to_keep=50)
+            # collect params (or stuff to keep in general)
+            params = dict()
+            params['critic'] = self.critic.network.get_param_values()
+            params['policy'] = self.policy.get_param_values()
+            # if the environment is wrapped in a normalizing env, save those stats
+            normalized_env = hgail.misc.utils.extract_normalizing_env(self.env)
+            if normalized_env is not None:
+                params['normalzing'] = dict(
+                    obs_mean=normalized_env._obs_mean,
+                    obs_var=normalized_env._obs_var
+                )
 
+            # save params 
+            save_dir = os.path.split(self.saver_filepath)[0]
+            hgail.misc.utils.save_params(save_dir, params, itr, max_to_keep=50)
+
+    def load(self, filepath):
+        '''
+        Load parameters from a filepath. Symmetric to _save. This is not ideal, 
+        but it's easier than keeping track of everything separately.
+        '''
+        params = hgail.misc.utils.load_params(filepath)
+        self.critic.network.set_param_values(params['critic'])
+        self.policy.set_param_values(params['policy'])
+        normalized_env = hgail.misc.utils.extract_normalizing_env(self.env)
+        if normalized_env is not None:
+            normalized_env._obs_mean = params['normalzing']['obs_mean']
+            normalized_env._obs_var = params['normalzing']['obs_var']
+            
     def _validate(self, itr, samples_data):
         """
         Run validation functions.

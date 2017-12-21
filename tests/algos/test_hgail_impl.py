@@ -187,6 +187,7 @@ class TestHGAIL(unittest.TestCase):
         with tf.Session() as session:
             # build it
             algo = build_hgail(env, critic_dataset, batch_size)
+            session.run(tf.global_variables_initializer())
 
             # run it!
             algo.train(sess=session)
