@@ -4,6 +4,8 @@ import h5py
 import numpy as np
 import sys
 
+from sandbox.rocky.tf.misc.tensor_utils import stack_tensor_dict_list, stack_tensor_list
+
 class Trajectory(collections.defaultdict):
 
     def __init__(self):
@@ -17,6 +19,13 @@ class Trajectory(collections.defaultdict):
         self['rewards'].append(r)
         self['agent_infos'].append(a_info)
         self['env_infos'].append(env_info)
+
+    def flatten(self):
+        self['observations'] = stack_tensor_list(self['observations'])
+        self['actions'] = stack_tensor_list(self['actions'])
+        self['rewards'] = stack_tensor_list(self['rewards'])
+        self['agent_infos'] = stack_tensor_dict_list(self['agent_infos'])
+        self['env_infos'] = stack_tensor_dict_list(self['env_infos'])
 
 def write_trajectories(trajs, filepath, timeseries=False):
     '''
@@ -54,6 +63,7 @@ def simulate(env, policy, max_steps, render=False):
         )
         if done: break
         x = nx
+    traj.flatten()
     return traj
 
 def collect_trajectories(n_traj, env, policy, max_steps):
