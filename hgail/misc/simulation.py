@@ -21,11 +21,16 @@ class Trajectory(collections.defaultdict):
         self['env_infos'].append(env_info)
 
     def flatten(self):
-        self['observations'] = stack_tensor_list(self['observations'])
-        self['actions'] = stack_tensor_list(self['actions'])
-        self['rewards'] = stack_tensor_list(self['rewards'])
-        self['agent_infos'] = stack_tensor_dict_list(self['agent_infos'])
-        self['env_infos'] = stack_tensor_dict_list(self['env_infos'])
+        rtn = dict()
+        rtn['observations'] = stack_tensor_list(self['observations'])
+        rtn['actions'] = stack_tensor_list(self['actions'])
+        rtn['rewards'] = stack_tensor_list(self['rewards'])
+        # for each key, val in agent_infos and env_infos, stack them bring them to lowest level
+        for k,v in stack_tensor_dict_list(self['agent_infos']).items():
+            rtn[k] = v
+        for k,v in stack_tensor_dict_list(self['env_infos']).items():
+            rtn[k] = v
+        return rtn
 
 def write_trajectories(trajs, filepath, timeseries=False):
     '''
@@ -63,8 +68,7 @@ def simulate(env, policy, max_steps, render=False):
         )
         if done: break
         x = nx
-    traj.flatten()
-    return traj
+    return traj.flatten()
 
 def collect_trajectories(n_traj, env, policy, max_steps):
     trajs = []
