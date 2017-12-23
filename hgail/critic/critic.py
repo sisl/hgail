@@ -1,4 +1,5 @@
 
+import ipdb
 import numpy as np
 import tensorflow as tf
 
@@ -20,6 +21,7 @@ class Critic(object):
             grad_norm_rescale=10000.,
             grad_norm_clip=10000.,
             summary_writer=None,
+            debug_nan=True,
             verbose=0):
         self.network = network
         self.dataset = dataset
@@ -30,6 +32,7 @@ class Critic(object):
         self.grad_norm_rescale = grad_norm_rescale
         self.grad_norm_clip = grad_norm_clip
         self.summary_writer = summary_writer
+        self.debug_nan = debug_nan
         self.verbose = verbose
     
     def critique(self, itr, paths):
@@ -54,6 +57,9 @@ class Critic(object):
 
         # compute rewards
         rewards = self.network.forward(obs, acts, deterministic=True)
+
+        if np.any(np.isnan(rewards)) and self.debug_nan:
+            ipdb.set_trace()
         
         # output as a list of numpy arrays, each of len equal to the rewards of 
         # the corresponding trajectory
@@ -201,9 +207,12 @@ class WassersteinCritic(Critic):
             self.ga: batch['ga'],
             self.eps: np.random.uniform(0, 1, len(batch['rx'])).reshape(-1, 1)
         }
-        outputs_list = [self.train_op, self.summary_op, self.global_step]
+        outputs_list = [self.train_op, self.loss, self.summary_op, self.global_step]
         session = tf.get_default_session()
-        _, summary, step = session.run(outputs_list, feed_dict=feed_dict)
+        _, loss, summary, step = session.run(outputs_list, feed_dict=feed_dict)
+
+        if np.isnan(loss) and self.debug_nan:
+            ipdb.set_trace()
 
         if self.summary_writer:
             self.summary_writer.add_summary(tf.Summary.FromString(summary), step)
