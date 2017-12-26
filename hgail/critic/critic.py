@@ -1,5 +1,4 @@
 
-import ipdb
 import numpy as np
 import tensorflow as tf
 
@@ -59,6 +58,7 @@ class Critic(object):
         rewards = self.network.forward(obs, acts, deterministic=True)
 
         if np.any(np.isnan(rewards)) and self.debug_nan:
+            import ipdb
             ipdb.set_trace()
         
         # output as a list of numpy arrays, each of len equal to the rewards of 
@@ -212,6 +212,7 @@ class WassersteinCritic(Critic):
         _, loss, summary, step = session.run(outputs_list, feed_dict=feed_dict)
 
         if np.isnan(loss) and self.debug_nan:
+            import ipdb
             ipdb.set_trace()
 
         if self.summary_writer:
