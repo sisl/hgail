@@ -6,6 +6,42 @@ from sandbox.rocky.tf.algos.batch_polopt import BatchPolopt
 
 import hgail.misc.utils
 
+class Level(object):
+
+    def __init__(
+            self,
+            depth,
+            algo,
+            reward_handler,
+            recognition_model=None,
+            start_itr=0,
+            end_itr=np.inf):
+        self.depth = depth
+        self.algo = algo
+        self.reward_handler = reward_handler
+        self.recognition_model = recognition_model
+        self.start_itr = start_itr
+        self.end_itr = end_itr
+
+    def optimize_policy(self, itr, samples_data):
+        if self.start_itr <= itr and itr < self.end_itr:
+            self.algo.optimize_policy(itr, samples_data)
+            if self.recognition_model is not None:
+                self.recognition_model.train(itr, samples_data)
+
+    def process_samples(self, itr, paths, critic_rewards):
+        if self.start_itr <= itr:
+            if self.recognition_model is not None:
+                recognition_rewards = self.recognition_model.recognize(itr, paths, depth=self.depth)
+            else:
+                recognition_rewards = None
+            level_paths = self.reward_handler.merge(paths, critic_rewards, recognition_rewards)
+            samples_data = self.algo.process_samples(itr, level_paths)
+        else:
+            samples_data = None
+
+        return samples_data
+
 class HGAIL(BatchPolopt):
 
     def __init__(
@@ -42,9 +78,7 @@ class HGAIL(BatchPolopt):
         """
         self.critic.train(itr, samples_data[0])
         for (i, level) in enumerate(self.hierarchy):
-            if level.get('start_itr', 0) <= itr and itr < level.get('end_itr', np.inf):
-                level['algo'].optimize_policy(itr, samples_data[i])
-                level['recognition'].train(itr, samples_data[i])
+            level.optimize_policy(itr, samples_data[i])
 
     @overrides
     def process_samples(self, itr, paths):
@@ -65,17 +99,12 @@ class HGAIL(BatchPolopt):
         samples_data = dict()
         critic_rewards = self.critic.critique(itr, paths)
         for (i, level) in enumerate(self.hierarchy):
-            if level.get('start_itr', 0) <= itr:
-                recognition_rewards = level['recognition'].recognize(itr, paths, depth=i)
-                level_paths = level['reward_handler'].merge(
-                    paths, critic_rewards, recognition_rewards)
-                samples_data[i] = level['algo'].process_samples(itr, level_paths)
-
+            samples_data[i] = level.process_samples(itr, paths, critic_rewards)
         return samples_data
 
     @overrides
     def obtain_samples(self, itr):
-        return self.hierarchy[0]['algo'].obtain_samples(itr)
+        return self.hierarchy[0].algo.obtain_samples(itr)
 
     def _save(self, itr):
         """
@@ -99,7 +128,7 @@ class HGAIL(BatchPolopt):
             # save hierarchy
             for i, level in enumerate(self.hierarchy):
                 params[i] = dict()
-                params[i]['policy'] = level['algo'].policy.get_param_values()
+                params[i]['policy'] = level.algo.policy.get_param_values()
                 
             # save params 
             save_dir = os.path.split(self.saver_filepath)[0]
@@ -122,12 +151,12 @@ class HGAIL(BatchPolopt):
         for i, level in enumerate(self.hierarchy):
             if i in params.keys():
                 initial = False
-                level['algo'].policy.set_param_values(params[i]['policy'])
+                level.algo.policy.set_param_values(params[i]['policy'])
 
         # reaches this point without loading, we assume it is a save from 
         # the basic gail algorithm, that forms an initial save for hgail
         if initial:
-            self.hierarchy[0]['algo'].policy.set_param_values(params['policy'])
+            self.hierarchy[0].algo.policy.set_param_values(params['policy'])
 
     def _validate(self, itr, samples_data):
         """
@@ -149,25 +178,21 @@ class HGAIL(BatchPolopt):
 
     @overrides
     def start_worker(self):
-        self.hierarchy[0]['algo'].start_worker()
+        self.hierarchy[0].algo.start_worker()
 
     @overrides
     def shutdown_worker(self):
-        self.hierarchy[0]['algo'].shutdown_worker()
+        self.hierarchy[0].algo.shutdown_worker()
 
     @overrides
     def log_diagnostics(self, paths):
-        self.hierarchy[0]['algo'].log_diagnostics(paths)
+        self.hierarchy[0].algo.log_diagnostics(paths)
 
     def __getattr__(self, name):
         try:
-            return getattr(self.hierarchy[0]['algo'], name)
+            return getattr(self.hierarchy[0].algo, name)
         except Exception as e:
             print('class member with name {} requested'.format(name))
             print('class member not found in hgail')
             print('class member not found in first level algorithm in hierarhcy')
             raise(e)
-
-
-
-

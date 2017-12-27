@@ -26,7 +26,7 @@ from hgail.envs.envs import TwoRoundNondeterministicRewardEnv
 from hgail.policies.categorical_latent_var_mlp_policy import CategoricalLatentVarMLPPolicy
 from hgail.policies.categorical_latent_sampler import CategoricalLatentSampler
 from hgail.algos.gail import GAIL
-from hgail.algos.hgail_impl import HGAIL
+from hgail.algos.hgail_impl import HGAIL, Level
 from hgail.samplers.hierarchy_sampler import HierarchySampler
 from hgail.policies.latent_sampler import UniformlyRandomLatentSampler
 from hgail.core.models import CriticNetwork, ObservationActionMLP
@@ -96,13 +96,13 @@ def build_hgail(env, critic_dataset, batch_size):
             discount=0.99,
             step_size=0.01,
             sampler_cls=HierarchySampler,
-
         )
         reward_handler_1 = RewardHandler(use_env_rewards=False, critic_final_scale=1.)
-        level_1 = dict(
-            algo=algo_1,
-            reward_handler=reward_handler_1,
-            recognition=recog_1
+        level_1 = Level(
+            depth=1, 
+            algo=algo_1, 
+            reward_handler=reward_handler_1, 
+            recognition_model=recog_1
         )
 
     with tf.variable_scope('level_0'):
@@ -137,17 +137,18 @@ def build_hgail(env, critic_dataset, batch_size):
             baseline=baseline_0,
             batch_size=4000,
             max_path_length=100,
-            n_itr=15,
+            n_itr=5,
             discount=0.99,
-            step_size=0.01,
+            step_size=0.1,
             sampler_args=dict(n_envs=1)
         )
 
         reward_handler_0 = RewardHandler(use_env_rewards=False, critic_final_scale=1.)
-        level_0 = dict(
-            algo=algo_0,
-            reward_handler=reward_handler_0,
-            recognition=recog_0
+        level_0 = Level(
+            depth=0, 
+            algo=algo_0, 
+            reward_handler=reward_handler_0, 
+            recognition_model=recog_0
         )
 
     hierarchy = [level_0, level_1]
@@ -191,7 +192,7 @@ class TestHGAIL(unittest.TestCase):
 
             # run it!
             algo.train(sess=session)
-            policy = algo.hierarchy[0]['algo'].policy
+            policy = algo.hierarchy[0].algo.policy
 
             # evaluate
             l0_state_infos = dict(latent=[[1,0]])

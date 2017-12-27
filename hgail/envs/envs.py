@@ -53,3 +53,47 @@ class TwoRoundNondeterministicRewardEnv(Env):
     @property
     def observation_space(self):
         return spaces.Discrete(3)
+
+'''
+Description:
+    state: (x postion, desired x position, timestep)
+    actions: dx in [-1,1]
+    rewards: -l2 from desired x position
+    transitions: x = x + dx 
+    initial state distribution: x in [-1,1], desired x in [-1,1]
+'''
+class TwoRoundContinuousDeterministicEnv(Env):
+
+    def __init__(self):
+        self._action_space = spaces.Box(low=np.array([-1]), high=np.array([1]))
+        self._observation_space = spaces.Box(low=np.array([-1,-1,0]), high=np.array([1,1,2]))
+        self.reset()
+
+    def _get_obs(self):
+        return self.state
+
+    def reset(self):
+        x = (np.random.rand() - .5) * 2
+        x_des = (np.random.rand() - .5) * 2
+        t = 0
+        self.state = [x, x_des, t]
+        return self._get_obs()
+
+    def step(self, action):
+        assert self.action_space.contains(action)
+
+        x, x_des, t = self.state
+        t += 1
+        x = np.clip(x + action, -1, 1)
+        r = - (x - x_des) ** 2
+        done = t > 1
+        self.state = [x, x_des, t]
+        return self._get_obs(), r, done, {}
+
+    @property
+    def action_space(self):
+        return self._action_space
+
+    @property
+    def observation_space(self):
+        return self._observation_space
