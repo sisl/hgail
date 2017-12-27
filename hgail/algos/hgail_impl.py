@@ -77,8 +77,8 @@ class HGAIL(BatchPolopt):
                 and the returned value will be an array of shape (batch_size, prob_dim)
         """
         self.critic.train(itr, samples_data[0])
-        for (i, level) in enumerate(self.hierarchy):
-            level.optimize_policy(itr, samples_data[i])
+        for level in self.hierarchy:
+            level.optimize_policy(itr, samples_data[level.depth])
 
     @overrides
     def process_samples(self, itr, paths):
@@ -98,8 +98,8 @@ class HGAIL(BatchPolopt):
         """
         samples_data = dict()
         critic_rewards = self.critic.critique(itr, paths)
-        for (i, level) in enumerate(self.hierarchy):
-            samples_data[i] = level.process_samples(itr, paths, critic_rewards)
+        for level in self.hierarchy:
+            samples_data[level.depth] = level.process_samples(itr, paths, critic_rewards)
         return samples_data
 
     @overrides
