@@ -6,8 +6,6 @@ import copy
 import numpy as np
 import tensorflow as tf
 
-from hgail.policies.categorical_latent_var_mlp_policy import CategoricalLatentVarMLPPolicy
-
 class LatentSampler(object):
     '''
     Mixin class to be used when making a class intended to sample latent variables.
