@@ -1,5 +1,6 @@
 
 import numpy as np
+import os
 
 from rllab.misc.overrides import overrides
 from sandbox.rocky.tf.algos.batch_polopt import BatchPolopt
@@ -50,14 +51,12 @@ class HGAIL(BatchPolopt):
             hierarchy,
             saver=None,
             saver_filepath=None,
-            validator=None,
-            snapshot_env=True,):
+            validator=None):
         self.critic = critic
         self.hierarchy = hierarchy
         self.saver = saver
         self.saver_filepath = saver_filepath
         self.validator = validator
-        self.snapshot_env = snapshot_env
 
     @overrides
     def optimize_policy(self, itr, samples_data):
@@ -164,10 +163,10 @@ class HGAIL(BatchPolopt):
         """
         if self.validator:
             objs = dict(
-                policy=self.policy, 
+                policy=self.hierarchy[0].algo.policy, 
                 critic=self.critic, 
-                samples_data=samples_data,
-                env=self.env)
+                samples_data=samples_data[0],
+                env=self.hierarchy[0].algo.env)
             self.validator.validate(itr, objs)
 
     @overrides
