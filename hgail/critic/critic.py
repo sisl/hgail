@@ -184,7 +184,7 @@ class WassersteinCritic(Critic):
             loss = tf.Print(loss, [real_loss, gen_loss, gradient_penalty, loss],
                 message='real, gen, penalty, total loss: ')
         
-        gradients = tf.gradients(loss, self.network.var_list)
+        self.gradients = gradients = tf.gradients(loss, self.network.var_list)
         clipped_gradients = hgail.misc.tf_utils.clip_gradients(
             gradients, self.grad_norm_rescale, self.grad_norm_clip)
         
@@ -207,11 +207,12 @@ class WassersteinCritic(Critic):
             self.ga: batch['ga'],
             self.eps: np.random.uniform(0, 1, len(batch['rx'])).reshape(-1, 1)
         }
-        outputs_list = [self.train_op, self.loss, self.summary_op, self.global_step]
+        outputs_list = [self.train_op, self.gradients, self.summary_op, self.global_step]
         session = tf.get_default_session()
-        _, loss, summary, step = session.run(outputs_list, feed_dict=feed_dict)
+        _, grads, summary, step = session.run(outputs_list, feed_dict=feed_dict)
 
-        if np.isnan(loss) and self.debug_nan:
+        grads_nan = np.any([np.any(np.isnan(g)) for g in grads])
+        if grads_nan and self.debug_nan:
             import ipdb
             ipdb.set_trace()
 
