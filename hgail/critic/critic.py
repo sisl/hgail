@@ -168,21 +168,21 @@ class WassersteinCritic(Critic):
         rx, ra, gx, ga, eps = self.rx, self.ra, self.gx, self.ga, self.eps
 
         # gradient penalty        
-        xhat = eps * rx + (1 - eps) * gx
-        ahat = eps * ra + (1 - eps) * ga
+        self.xhat = xhat = eps * rx + (1 - eps) * gx
+        self.ahat = ahat = eps * ra + (1 - eps) * ga
         xhat_gradients, ahat_gradients = tf.gradients(self.network(xhat, ahat), [xhat, ahat])
-        hat_gradients = tf.concat([xhat_gradients, ahat_gradients], axis=1)
+        self.hat_gradients = hat_gradients = tf.concat([xhat_gradients, ahat_gradients], axis=1)
         slopes = tf.sqrt(tf.reduce_sum(hat_gradients ** 2, reduction_indices=[1]))
-        gradient_penalty = self.gradient_penalty * tf.reduce_mean((slopes - 1) ** 2)
+        self.gp_loss = gp_loss = self.gradient_penalty * tf.reduce_mean((slopes - 1) ** 2)
         
         # loss and train op
-        real_loss = -tf.reduce_mean(self.network(rx, ra))
-        gen_loss = tf.reduce_mean(self.network(gx, ga))
-        self.loss = loss = real_loss + gen_loss + gradient_penalty
+        self.real_loss = real_loss = -tf.reduce_mean(self.network(rx, ra))
+        self.gen_loss = gen_loss = tf.reduce_mean(self.network(gx, ga))
+        self.loss = loss = real_loss + gen_loss + gp_loss
 
         if self.verbose >= 2:
-            loss = tf.Print(loss, [real_loss, gen_loss, gradient_penalty, loss],
-                message='real, gen, penalty, total loss: ')
+            loss = tf.Print(loss, [real_loss, gen_loss, gp_loss, loss],
+                message='real, gen, gp, total loss: ')
         
         self.gradients = gradients = tf.gradients(loss, self.network.var_list)
         clipped_gradients = hgail.misc.tf_utils.clip_gradients(
@@ -194,7 +194,7 @@ class WassersteinCritic(Critic):
                             global_step=self.global_step)
         
         # summaries
-        summaries = self._build_summaries(loss, real_loss, gen_loss, gradients,  clipped_gradients, gradient_penalty)
+        summaries = self._build_summaries(loss, real_loss, gen_loss, gradients, clipped_gradients, gp_loss)
         summaries += self._build_input_summaries(rx, ra, gx, ga)
         self.summary_op = tf.summary.merge(summaries)
         
@@ -207,14 +207,28 @@ class WassersteinCritic(Critic):
             self.ga: batch['ga'],
             self.eps: np.random.uniform(0, 1, len(batch['rx'])).reshape(-1, 1)
         }
-        outputs_list = [self.train_op, self.gradients, self.summary_op, self.global_step]
+        outputs_list = [self.train_op, self.summary_op, self.global_step]
+        if self.debug_nan:
+            outputs_list += [
+                self.gradients, 
+                self.xhat, 
+                self.ahat, 
+                self.hat_gradients,
+                self.gp_loss,
+                self.real_loss, 
+                self.gen_loss 
+            ] 
         session = tf.get_default_session()
-        _, grads, summary, step = session.run(outputs_list, feed_dict=feed_dict)
+        fetched = session.run(outputs_list, feed_dict=feed_dict)
+        summary, step = fetched[1], fetched[2]
 
-        grads_nan = np.any([np.any(np.isnan(g)) for g in grads])
-        if grads_nan and self.debug_nan:
-            import ipdb
-            ipdb.set_trace()
+        if self.debug_nan:
+            grads, xhat, ahat, hat_grads, gp_loss, real_loss, gen_loss = fetched[3:]
+            grads_nan = np.any([np.any(np.isnan(g)) for g in grads])
+
+            if grads_nan or np.isnan(gp_loss) or np.isnan(real_loss) or np.isnan(gen_loss):
+                import ipdb
+                ipdb.set_trace()
 
         if self.summary_writer:
             self.summary_writer.add_summary(tf.Summary.FromString(summary), step)
