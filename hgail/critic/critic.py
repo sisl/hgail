@@ -20,7 +20,7 @@ class Critic(object):
             grad_norm_rescale=10000.,
             grad_norm_clip=10000.,
             summary_writer=None,
-            debug_nan=True,
+            debug_nan=False,
             verbose=0):
         self.network = network
         self.dataset = dataset
@@ -172,7 +172,7 @@ class WassersteinCritic(Critic):
         self.ahat = ahat = eps * ra + (1 - eps) * ga
         xhat_gradients, ahat_gradients = tf.gradients(self.network(xhat, ahat), [xhat, ahat])
         self.hat_gradients = hat_gradients = tf.concat([xhat_gradients, ahat_gradients], axis=1)
-        slopes = tf.sqrt(tf.reduce_sum(hat_gradients ** 2, reduction_indices=[1]))
+        slopes = tf.sqrt(tf.reduce_sum(hat_gradients ** 2, reduction_indices=[1]) + 1e-8)
         self.gp_loss = gp_loss = self.gradient_penalty * tf.reduce_mean((slopes - 1) ** 2)
         
         # loss and train op
@@ -199,7 +199,7 @@ class WassersteinCritic(Critic):
         self.summary_op = tf.summary.merge(summaries)
 
         # debug_nan
-        self.gp_gradients = tf.gradients(self.gp_loss, self.network.var_list)
+        self.gp_gradients = tf.gradients(self.gp_loss, self.network.var_list)[:-1]
         
     def _train_batch(self, batch):
 
