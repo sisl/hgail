@@ -197,6 +197,9 @@ class WassersteinCritic(Critic):
         summaries = self._build_summaries(loss, real_loss, gen_loss, gradients, clipped_gradients, gp_loss)
         summaries += self._build_input_summaries(rx, ra, gx, ga)
         self.summary_op = tf.summary.merge(summaries)
+
+        # debug_nan
+        self.gp_gradients = tf.gradients(self.gp_loss, self.network.var_list)
         
     def _train_batch(self, batch):
 
@@ -214,6 +217,7 @@ class WassersteinCritic(Critic):
                 self.xhat, 
                 self.ahat, 
                 self.hat_gradients,
+                self.gp_gradients,
                 self.gp_loss,
                 self.real_loss, 
                 self.gen_loss 
@@ -223,7 +227,7 @@ class WassersteinCritic(Critic):
         summary, step = fetched[1], fetched[2]
 
         if self.debug_nan:
-            grads, xhat, ahat, hat_grads, gp_loss, real_loss, gen_loss = fetched[3:]
+            grads, xhat, ahat, hat_grads, gp_grads, gp_loss, real_loss, gen_loss = fetched[3:]
             grads_nan = np.any([np.any(np.isnan(g)) for g in grads])
 
             if grads_nan or np.isnan(gp_loss) or np.isnan(real_loss) or np.isnan(gen_loss):
