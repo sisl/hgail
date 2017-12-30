@@ -5,32 +5,6 @@ from rllab.envs.base import Env
 
 from sandbox.rocky.tf import spaces
 
-class MockAlgo(object):
-    def __init__(
-            self, 
-            policy=None, 
-            env=None, 
-            baseline=None, 
-            discount=1.,
-            batch_size=10,
-            max_path_length=1000,
-            gae_lambda=1.
-        ):
-        self.policy = policy
-        self.env = env
-        self.baseline = baseline
-        self.discount = discount
-        self.batch_size = batch_size
-        self.max_path_length = max_path_length
-        self.gae_lambda = gae_lambda
-        self.center_adv = False
-        self.positive_adv = False
-
-class MockDist(object):
-
-    def entropy(self, *args):
-        return 0
-
 class MockPolicy(object):
 
     def __init__(self, action_space):
@@ -66,6 +40,32 @@ class MockPolicy(object):
     @property
     def distribution(self):
         return MockDist()
+
+class MockAlgo(object):
+    def __init__(
+            self, 
+            policy=None, 
+            env=None, 
+            baseline=None, 
+            discount=1.,
+            batch_size=10,
+            max_path_length=1000,
+            gae_lambda=1.
+        ):
+        self.policy = policy
+        self.env = env
+        self.baseline = baseline
+        self.discount = discount
+        self.batch_size = batch_size
+        self.max_path_length = max_path_length
+        self.gae_lambda = gae_lambda
+        self.center_adv = False
+        self.positive_adv = False
+
+class MockDist(object):
+
+    def entropy(self, *args):
+        return 0
 
 class MockEnv(Env):
     def __init__(self, observation_space, action_space):

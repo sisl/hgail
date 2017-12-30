@@ -347,6 +347,13 @@ def probabilistic_round(a):
     a[down] = np.floor(a[down])
     return a
 
+def subselect_dict_list_idxs(d_l, key, idxs_l):
+    for d, idxs in zip(d_l, idxs_l):
+        sub_d = dict()
+        for (k,v) in d[key].items():
+            sub_d[k] = v[idxs]
+        d[key] = sub_d
+
 '''
 Replay Memory
 '''
