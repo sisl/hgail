@@ -354,6 +354,10 @@ def subselect_dict_list_idxs(d_l, key, idxs_l):
             sub_d[k] = v[idxs]
         d[key] = sub_d
 
+def flatten(arr):
+    '''reshape to (-1, lastdim)'''
+    return np.reshape(arr, (-1, np.shape(arr)[-1]))
+
 '''
 Replay Memory
 '''

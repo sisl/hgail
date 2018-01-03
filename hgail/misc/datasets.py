@@ -27,6 +27,7 @@ class Dataset(object):
             observation_normalizer=None,
             replay_memory=None,
             recurrent=False,
+            flat_recurrent=False,
             use_random_scaling=False,
             random_scale_factor=.2,
             use_random_noise=False,
@@ -35,6 +36,7 @@ class Dataset(object):
         assert 'observations' in data.keys()
         assert 'actions' in data.keys() 
 
+        assert not (flat_recurrent and recurrent)
         if recurrent: 
             assert 'valids' in data.keys()
             # expert data has already been padded to the max sequence length
@@ -46,6 +48,7 @@ class Dataset(object):
         self.observation_normalizer = observation_normalizer
         self.replay_memory = replay_memory
         self.recurrent = recurrent
+        self.flat_recurrent = flat_recurrent
         self.use_random_scaling = use_random_scaling
         self.random_scale_factor = random_scale_factor
         self.use_random_noise = use_random_noise
@@ -105,6 +108,11 @@ class Dataset(object):
             data['actions'] = pad_tensor(data['actions'], self.max_seq_len, axis=1)
             data['observations'] = pad_tensor(data['observations'], self.max_seq_len, axis=1)
             data['valids'] = pad_tensor(data['valids'], self.max_seq_len, axis=1)
+        elif self.flat_recurrent:
+            act_dim = data['actions'].shape[-1]
+            data['actions'] = np.reshape(data['actions'], (-1, act_dim))
+            obs_dim = data['observations'].shape[-1]
+            data['observations'] = np.reshape(data['observations'], (-1, obs_dim))
 
     def batches(self, samples_data, store=True):
         raise NotImplementedError()
