@@ -131,7 +131,7 @@ class HGAIL(BatchPolopt):
                 
             # save params 
             save_dir = os.path.split(self.saver_filepath)[0]
-            hgail.misc.utils.save_params(save_dir, params, itr, max_to_keep=50)
+            hgail.misc.utils.save_params(save_dir, params, itr+1, max_to_keep=50)
 
     def load(self, filepath):
         '''
