@@ -201,6 +201,7 @@ class RecognitionDataset(object):
             observation_normalizer=None,
             latent_variable_type='categorical',
             recurrent=False,
+            flat_recurrent=False,
             conditional=False,
             domain=False,
             cond_key=None):
@@ -209,6 +210,7 @@ class RecognitionDataset(object):
         self.observation_normalizer = observation_normalizer
         self.latent_variable_type = latent_variable_type
         self.recurrent = recurrent
+        self.flat_recurrent = flat_recurrent
         assert cond_key is not None or not conditional
         self.conditional = conditional
         self.cond_key = cond_key
@@ -223,6 +225,15 @@ class RecognitionDataset(object):
         if self.observation_normalizer:
             data['observations'] = self.observation_normalizer(data['observations'])
 
+    def _format(self, data):
+        if self.flat_recurrent:
+            act_dim = data['actions'].shape[-1]
+            data['actions'] = np.reshape(data['actions'], (-1, act_dim))
+            obs_dim = data['observations'].shape[-1]
+            data['observations'] = np.reshape(data['observations'], (-1, obs_dim))
+            latent_dim = data['agent_infos']['latent'].shape[-1]
+            data['agent_infos']['latent'] = np.reshape(data['agent_infos']['latent'], (-1, latent_dim))
+
     def batches(self, samples_data):
     
         assert 'observations' in samples_data.keys()
@@ -236,6 +247,9 @@ class RecognitionDataset(object):
 
         # copy in order to avoid mutating data used elsewhere
         sd = copy.deepcopy(samples_data)
+
+        # format incoming data if necessary
+        self._format(sd)
 
         # optionally normalize
         self._normalize(sd)
