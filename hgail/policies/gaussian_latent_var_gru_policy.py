@@ -140,14 +140,15 @@ class GaussianLatentVarGRUPolicy(StochasticPolicy, LayersPowered, Serializable):
         n_batches = tf.shape(obs_var)[0]
         n_steps = tf.shape(obs_var)[1]
         obs_var = tf.reshape(obs_var, tf.stack([n_batches, n_steps, -1]))
+
+        if state_info_vars is not None and len(state_info_vars.keys()) != 0:
+            obs_var = self.latent_sampler.merge_sym(obs_var, state_info_vars)
+
         if self.state_include_action:
             prev_action_var = state_info_vars["prev_action"]
             all_input_var = tf.concat(axis=2, values=[obs_var, prev_action_var])
         else:
             all_input_var = obs_var
-
-        if state_info_vars is not None and len(state_info_vars.keys()) != 0:
-            all_input_var = self.latent_sampler.merge_sym(all_input_var, state_info_vars)
 
         if self.feature_network is None:
             means, log_stds = L.get_output(
@@ -194,6 +195,11 @@ class GaussianLatentVarGRUPolicy(StochasticPolicy, LayersPowered, Serializable):
     @overrides
     def get_actions(self, observations):
         flat_obs = self.observation_space.flatten_n(observations)
+
+        # sample and concat latent var
+        latent, latent_info = self.latent_sampler.get_actions(flat_obs)
+        flat_obs = np.hstack((flat_obs, latent))
+
         if self.state_include_action:
             assert self.prev_actions is not None
             all_input = np.concatenate([
@@ -202,10 +208,6 @@ class GaussianLatentVarGRUPolicy(StochasticPolicy, LayersPowered, Serializable):
             ], axis=-1)
         else:
             all_input = flat_obs
-
-        # sample and concat latent var
-        latent, latent_info = self.latent_sampler.get_actions(all_input)
-        all_input = np.hstack((all_input, latent))
 
         means, log_stds, hidden_vec = self.f_step_mean_std(all_input, self.prev_hiddens)
         rnd = np.random.normal(size=means.shape)
