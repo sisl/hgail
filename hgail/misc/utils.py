@@ -9,6 +9,8 @@ import tensorflow as tf
 
 from rllab.envs.normalized_env import NormalizedEnv
 
+from hgail.envs.vectorized_normalized_env import VectorizedNormalizedEnv
+
 '''
 Reward utils
 '''
@@ -427,4 +429,7 @@ def extract_wrapped_env(env, typ):
     return env
 
 def extract_normalizing_env(env):
-    return extract_wrapped_env(env, NormalizedEnv)
+    normalizing_env = extract_wrapped_env(env, NormalizedEnv)
+    if normalizing_env is None:
+        normalizing_env = extract_wrapped_env(env, VectorizedNormalizedEnv)
+    return normalizing_env
