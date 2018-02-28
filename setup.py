@@ -16,5 +16,4 @@ setup(name='hgail',
         'h5py',
         'cached_property',
         'joblib',
-        'scikit-image'
       ])

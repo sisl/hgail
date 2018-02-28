@@ -22,4 +22,5 @@ python setup.py develop
  ```
 
 # Examples
-- see [`scripts/README.md`](scripts/README.md) for an example walkthrough
+- for an artificial example on cartpole, see [`scripts/README.md`](scripts/README.md) 
+- for an actual application, see this [repo](https://github.com/sisl/ngsim_env) on learning human driver models with gail

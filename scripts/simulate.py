@@ -100,7 +100,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # logistics
     parser.add_argument('--exp_name', type=str, default='CartPole-v0')
-    parser.add_argument('--itr', type=int, default=99)
+    parser.add_argument('--itr', type=int, default=95)
     parser.add_argument('--mode', type=str, default='collect', help='one of collect, evaluate, or visualize')
     parser.add_argument('--n_traj', type=int, default=500, help='number of trajectories to collect or evaluate with')
     parser.add_argument('--max_steps', type=int, default=1000)

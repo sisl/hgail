@@ -33,7 +33,7 @@ saver_dir = os.path.join(exp_dir, 'imitate', 'log')
 saver_filepath = os.path.join(saver_dir, 'checkpoint')
 
 # constants
-use_infogail = True
+use_infogail = False
 use_critic_replay_memory = True
 latent_dim = 2
 real_data_maxsize = None
@@ -51,7 +51,7 @@ if initial_filepath is None:
     start_itr = 0
 else:
     start_itr = int(initial_filepath[initial_filepath.rfind('-')+1:])
-n_itr = start_itr + 1000
+n_itr = start_itr + 200
 max_path_length = 1000
 
 # load env from the training process
