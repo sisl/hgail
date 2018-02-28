@@ -1,4 +1,6 @@
 
+import tensorflow as tf
+
 from rllab.baselines.linear_feature_baseline import LinearFeatureBaseline
 from rllab.baselines.zero_baseline import ZeroBaseline
 from rllab.envs.gym_env import GymEnv
@@ -41,4 +43,6 @@ algo = TRPO(
     discount=0.999,
     step_size=0.01
 )
-algo.train()
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    algo.train(sess=sess)

@@ -4,7 +4,6 @@ import copy
 import h5py
 import numpy as np
 import os
-import skimage.transform
 import tensorflow as tf
 
 from rllab.envs.normalized_env import NormalizedEnv

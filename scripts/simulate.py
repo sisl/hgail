@@ -1,4 +1,5 @@
 
+import argparse
 import joblib
 import os
 import matplotlib.pyplot as plt
@@ -88,6 +89,7 @@ def visualize(env, policy, n_traj, max_steps, render=False):
         traj = hgail.misc.simulation.simulate(env, policy, max_steps, render=render)
         trajs.append(traj)
     print('\nmean path len: {}'.format(np.mean([len(d['rewards']) for d in trajs])))
+    print('mean reward: {}'.format(np.mean([np.sum(d['rewards']) for d in trajs])))
     return trajs
         
 if __name__ == '__main__':
@@ -95,22 +97,45 @@ if __name__ == '__main__':
     Comment out the first code block (starting with collect) to visualize the 
     learned infogail policy, comment out the second to collect expert trajectories
     '''
+    parser = argparse.ArgumentParser()
+    # logistics
+    parser.add_argument('--exp_name', type=str, default='CartPole-v0')
+    parser.add_argument('--itr', type=int, default=99)
+    parser.add_argument('--mode', type=str, default='collect', help='one of collect, evaluate, or visualize')
+    parser.add_argument('--n_traj', type=int, default=500, help='number of trajectories to collect or evaluate with')
+    parser.add_argument('--max_steps', type=int, default=1000)
+
+    args = parser.parse_args()
 
     exp_name = 'CartPole-v0'
 
     # collect expert trajectories
-    itr = 95
-    input_filepath = '../data/experiments/{}/train/log/itr_{}.pkl'.format(exp_name, itr)
-    output_dir = '../data/experiments/{}/collection/'.format(exp_name)
-    utils.maybe_mkdir(output_dir)
-    output_filepath = os.path.join(output_dir, 'expert_traj.h5')
-    trajectories = collect(input_filepath, n_traj=500, max_steps=1000)
-    hgail.misc.simulation.write_trajectories(trajectories, output_filepath)
+    if args.mode == 'collect':
+        input_filepath = '../data/experiments/{}/train/log/itr_{}.pkl'.format(args.exp_name, args.itr)
+        output_dir = '../data/experiments/{}/collection/'.format(args.exp_name)
+        utils.maybe_mkdir(output_dir)
+        output_filepath = os.path.join(output_dir, 'expert_traj.h5')
+        trajectories = collect(input_filepath, n_traj=args.n_traj, max_steps=args.max_steps)
+        hgail.misc.simulation.write_trajectories(trajectories, output_filepath)
 
-    # visualzie gail policy
-    itr = 150
-    phase = 'imitate'
-    input_filepath = '../data/experiments/{}/{}/log/itr_{}.pkl'.format(exp_name, phase, itr)
-    with tf.Session() as session:
-        env, policy = load_env_policy(input_filepath)
-        trajs = visualize(env, policy, n_traj=50, max_steps=1000, render=True)
+    # evaluate 
+    elif args.mode == 'evaluate' or args.mode == 'visualize':
+        if args.mode == 'visualize':
+            args.n_traj = 10
+            render = True 
+        else:
+            render = False
+
+        phase = 'imitate'
+        input_filepath = '../data/experiments/{}/{}/log/itr_{}.pkl'.format(
+            args.exp_name, phase, args.itr)
+        with tf.Session() as session:
+            env, policy = load_env_policy(input_filepath)
+            trajs = visualize(
+                env, 
+                policy, 
+                n_traj=args.n_traj, 
+                max_steps=args.max_steps, 
+                render=render
+            )
+
