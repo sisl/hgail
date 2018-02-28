@@ -1,29 +1,10 @@
 
-
-<!-- MarkdownTOC -->
-
-- [HGAIL](#hgail)
-    - [Plans](#plans)
-- [Install](#install)
-    - [requirements](#requirements)
-- [Scripts & Examples](#scripts--examples)
-    - [Critic](#critic)
-    - [Imitation](#imitation)
-- [Package Outline](#package-outline)
-    - [gail](#gail)
-    - [critic](#critic-1)
-
-<!-- /MarkdownTOC -->
-
-# HGAIL
-This repo contains an implementation of [generative adversarial imitation learning](https://arxiv.org/abs/1606.03476) (GAIL) built on [rllab](https://github.com/openai/rllab). 
-
-## Plans
-- hierarchical GAIL; the primary focus of the repo
-- [InfoGAIL](https://arxiv.org/abs/1703.08840); controllable behaviors
+# GAIL
+This repo contains an implementations of the following, built on top of [rllab](https://github.com/openai/rllab)
+- [generative adversarial imitation learning](https://arxiv.org/abs/1606.03476) (GAIL) 
+- [InfoGAIL](https://arxiv.org/abs/1703.08840)
 
 # Install
-
 - install rllab
 ```bash
 # note: the following asssumes you have conda (miniconda at least) installed on your system
@@ -64,7 +45,7 @@ export PYTHONPATH=:/path/to/hgail$PYTHONPATH
 
 # Package Outline
 
-## gail
+## GAIL
 - Main class. Inherits from TRPO and serves to interject critic rewards into the trajectories of the agent. Also orchestrates training of critic and recognition networks. See gail.py
 
 ## critic 
