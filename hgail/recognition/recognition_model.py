@@ -33,6 +33,8 @@ class RecognitionModel(object):
         self.n_train_epochs = n_train_epochs
         self.summary_writer = summary_writer
         self.verbose = verbose
+        if self.variable_type not in ['categorical', 'gaussian']:
+            raise NotImplementedError('invalid latent variable type: {}'.format(self.variable_type))
         self._build_model()
 
     def _extract_actions_latents(self, paths, depth):
@@ -82,9 +84,14 @@ class RecognitionModel(object):
             paths: list of dictionaries
         """
         obs, acts, latents = self._extract_from_paths(paths, depth)
-        probs = self._probs(obs, acts)
-        idxs = np.argmax(latents, axis=1)
-        rewards = probs[np.arange(len(idxs)), idxs]
+        
+        if self.variable_type == 'categorical':
+            probs = self._probs(obs, acts)
+            idxs = np.argmax(latents, axis=1)
+            rewards = probs[np.arange(len(idxs)), idxs]
+        elif self.variable_type == 'gaussian':
+            probs = self._probs(obs, acts, latents)
+            rewards = probs
 
         # output as a list of numpy arrays, each of len equal to the rewards of 
         # the corresponding trajectory
@@ -94,7 +101,7 @@ class RecognitionModel(object):
         self._log_recognize(itr, paths, rewards)
         return path_rewards
 
-    def _probs(self, obs, act):
+    def _probs(self, obs, act, latents=None):
         """
         Compute the probability of the latent variable values given 
         the observations and actions
@@ -104,6 +111,8 @@ class RecognitionModel(object):
             - act: numpy array shape (batch_size, act_dim)
         """
         feed_dict = {self.x: obs, self.a: act}
+        if latents is not None:
+            feed_dict[self.c] = latents
         session = tf.get_default_session()
         probs = session.run(self.probs, feed_dict=feed_dict)
         return probs
@@ -182,11 +191,34 @@ class RecognitionModel(object):
 
     def _forward(self):
         self.scores = self.network(self.x, self.a)
-        self.probs = tf.nn.softmax(self.scores)
+
+        if self.variable_type == 'categorical':
+            self.probs = tf.nn.softmax(self.scores)
+
+        elif self.variable_type == 'gaussian':
+            # in the gaussian case, the recognition network needs to output 
+            # both the means and std deviations for the gaussian distribution
+            if self.scores.shape[1] != 2 * self.latent_dim:
+                raise ValueError(
+                    'when using gaussian latent variables '
+                    'the recognition network must be created with 2x '
+                    'the output size, but it is {} when it should be {}'.format(
+                        self.scores.shape[1], 2 * self.latent_dim
+                    )
+                )
+            self.mean, self.logvar = tf.split(self.scores, 2, axis=1)
+            self.sigma = tf.exp(self.logvar / 2.)
+            self.dist = tf.contrib.distributions.MultivariateNormalDiag(self.mean, self.sigma)
+            self.probs = self.dist.prob(self.c)
+            self.log_probs = self.dist.log_prob(self.c)
 
     def _build_loss(self):
-        loss = tf.nn.softmax_cross_entropy_with_logits(labels=self.c, logits=self.scores)
-        self.loss = tf.reduce_mean(loss)
+        if self.variable_type == 'categorical':
+            loss = tf.nn.softmax_cross_entropy_with_logits(labels=self.c, logits=self.scores)
+            self.loss = tf.reduce_mean(loss)
+        elif self.variable_type == 'gaussian':
+            loss = -self.log_probs
+            self.loss = tf.reduce_mean(loss)
         if self.verbose >= 2:
             self.loss = tf.Print(self.loss, [self.loss], message='recognition loss: ')
 

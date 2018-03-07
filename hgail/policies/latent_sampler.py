@@ -86,8 +86,12 @@ def _categorical_latent_variable(dim, n_samples, pvals=None):
     pvals = np.ones(dim) / dim if pvals is None else pvals
     return np.random.multinomial(1, pvals, size=n_samples)
 
-def _uniform_latent_variable(dim, n_samples):
-    raise NotImplementedError
+def _gaussian_latent_variable(dim, n_samples):
+    return np.random.multivariate_normal(
+        mean=np.zeros(dim),
+        cov=np.eye(dim),
+        size=n_samples
+    )
 
 def _build_latent_variable_function(variable_type):
     '''
@@ -97,8 +101,8 @@ def _build_latent_variable_function(variable_type):
     '''
     if variable_type == 'categorical':
         return _categorical_latent_variable
-    elif variable_type == 'uniform':
-        return _uniform_latent_variable
+    elif variable_type == 'gaussian':
+        return _gaussian_latent_variable
     else:
         raise ValueError('variable_type not implemented: {}'.format(variable_type))
 

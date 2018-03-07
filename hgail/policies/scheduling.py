@@ -47,6 +47,8 @@ class ConstantIntervalScheduler(Scheduler):
         Returns:
             list of indicator values as to whether or not to update
         '''
+        if self.counters is None:
+            self.counters = np.zeros(len(observations))
         # if the episode step count evenly divides k, then update 
         # otherwise do not update
         indicators = self.counters % self.k == 0

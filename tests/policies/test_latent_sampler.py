@@ -20,6 +20,12 @@ class TestLatentVariableFunctions(unittest.TestCase):
         self.assertTrue(np.shape(samples) == (100, 3))
         self.assertTrue(all(np.sum(samples, axis=1) == 1))
 
+    def test_gaussian_latent_variable(self):
+        dim = 3
+        n_samples = 100
+        samples = hgail.policies.latent_sampler._gaussian_latent_variable(dim, n_samples)
+        self.assertTrue(np.shape(samples) == (100, 3))
+
 class TestUniformlyRandomLatentSampler(unittest.TestCase):
 
     def setUp(self):

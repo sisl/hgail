@@ -13,6 +13,7 @@ def vectorized_render_rollout(
         Rollout function, but only for use with a vectorized environment and 
         policy, and for the purpose of rendering the environment, not collecting 
         trajectories or really anything else
+
     '''
     x = env.reset()
     n_envs = len(x)
@@ -34,3 +35,6 @@ def vectorized_render_rollout(
             break
         x = nx
         env.render()
+
+
+

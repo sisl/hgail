@@ -85,7 +85,10 @@ class GAIL(TRPO):
 
             # collect params (or stuff to keep in general)
             params = dict()
-            params['critic'] = self.critic.network.get_param_values()
+            if self.critic:
+                params['critic'] = self.critic.network.get_param_values()
+            if self.recognition:
+                params['recognition'] = self.recognition.network.get_param_values()
             params['policy'] = self.policy.get_param_values()
             # if the environment is wrapped in a normalizing env, save those stats
             normalized_env = hgail.misc.utils.extract_normalizing_env(self.env)
@@ -105,7 +108,10 @@ class GAIL(TRPO):
         but it's easier than keeping track of everything separately.
         '''
         params = hgail.misc.utils.load_params(filepath)
-        self.critic.network.set_param_values(params['critic'])
+        if self.critic and 'critic' in params.keys():
+            self.critic.network.set_param_values(params['critic'])
+        if self.recognition and 'recognition' in params.keys():
+            self.recognition.network.set_param_values(params['recognition'])
         self.policy.set_param_values(params['policy'])
         normalized_env = hgail.misc.utils.extract_normalizing_env(self.env)
         if normalized_env is not None:
